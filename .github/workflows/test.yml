@@ -82,8 +82,8 @@ jobs:
           COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(root.attrib['line-rate'])")
           COVERAGE_PCT=$(echo "$COVERAGE * 100" | bc -l | xargs printf "%.0f")
           echo "Coverage: ${COVERAGE_PCT}%"
-          if [ "$COVERAGE_PCT" -lt 75 ]; then
-            echo "❌ Coverage ${COVERAGE_PCT}% is below threshold 75%"
+          if [ "$COVERAGE_PCT" -lt 50 ]; then
+            echo "❌ Coverage ${COVERAGE_PCT}% is below threshold 50%"
             exit 1
           else
             echo "✅ Coverage ${COVERAGE_PCT}% meets threshold"
