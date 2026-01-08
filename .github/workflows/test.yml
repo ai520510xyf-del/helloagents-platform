@@ -97,7 +97,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: ['18']
+        node-version: ['20']
       fail-fast: false
 
     steps:
