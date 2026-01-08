@@ -55,7 +55,7 @@ export function CodeEditor({
   useEffect(() => {
     if (editorRef.current) {
       const monacoTheme = theme === 'dark' ? 'helloagents-dark' : 'vs';
-      // @ts-ignore - monaco is available on the editor instance
+      // @ts-expect-error - monaco is available on the editor instance
       editorRef.current._themeService?.setTheme(monacoTheme);
     }
   }, [theme]);

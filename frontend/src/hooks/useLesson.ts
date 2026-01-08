@@ -56,7 +56,8 @@ export function useLesson() {
       }
     };
     loadInitialLesson();
-  }, []); // 只在组件挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在组件挂载时执行一次，避免重复加载
 
   // 切换课程
   const changeLesson = async (lessonId: string) => {
