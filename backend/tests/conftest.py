@@ -231,3 +231,56 @@ def chat_message_factory(db_session):
         return create_chat_message_data(db_session, **kwargs)
 
     return _create_chat_message
+
+
+# ==================== 容器池测试 Fixtures ====================
+
+@pytest.fixture
+def mock_docker_container():
+    """Mock Docker 容器对象"""
+    from unittest.mock import Mock
+
+    container = Mock()
+    container.id = "test_container_abc123"
+    container.short_id = "abc123"
+    container.status = "running"
+
+    # Mock exec_run 方法
+    def mock_exec_run(cmd, **kwargs):
+        result = Mock()
+        result.exit_code = 0
+        result.output = b"test_output\n"
+        return result
+
+    container.exec_run = Mock(side_effect=mock_exec_run)
+    container.reload = Mock()
+    container.stop = Mock()
+    container.remove = Mock()
+
+    # Mock stats 方法
+    def mock_stats(stream=False):
+        return {
+            'memory_stats': {
+                'usage': 50 * 1024 * 1024,  # 50MB
+                'limit': 128 * 1024 * 1024   # 128MB
+            }
+        }
+    container.stats = Mock(side_effect=mock_stats)
+
+    return container
+
+
+@pytest.fixture
+def mock_docker_client(mock_docker_container):
+    """Mock Docker 客户端"""
+    from unittest.mock import Mock
+
+    client = Mock()
+    client.containers = Mock()
+    client.images = Mock()
+    client.close = Mock()
+
+    # Mock containers.run 返回容器
+    client.containers.run = Mock(return_value=mock_docker_container)
+
+    return client
