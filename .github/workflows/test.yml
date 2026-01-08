@@ -128,6 +128,16 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
+      - name: Debug - Check file structure
+        working-directory: ./frontend
+        run: |
+          echo "=== Checking src/lib directory ==="
+          ls -la src/lib/
+          echo "=== Checking src/components/ui directory ==="
+          ls -la src/components/ui/
+          echo "=== Checking utils.ts content ==="
+          cat src/lib/utils.ts
+
       - name: Run frontend tests with coverage
         working-directory: ./frontend
         run: npm run test:coverage
