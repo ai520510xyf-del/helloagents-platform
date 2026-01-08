@@ -121,6 +121,114 @@ def test_with_user(sample_user):
 - 创建测试学习进度
 - 自动关联 sample_user 和 sample_lesson
 
+### `sample_submission`
+- 创建测试代码提交
+- 自动关联 sample_user 和 sample_lesson
+
+### `sample_chat_message`
+- 创建测试聊天消息
+- 自动关联 sample_user
+
+## 测试数据工厂
+
+✅ **已配置完成** - 使用工厂函数生成测试数据
+
+### 工厂 Fixtures
+
+我们提供了工厂 fixtures 来动态创建测试数据：
+
+```python
+def test_with_factories(user_factory, lesson_factory, progress_factory):
+    """使用工厂 fixtures 创建多个测试数据"""
+
+    # 创建随机用户
+    user1 = user_factory()
+    user2 = user_factory()
+
+    # 创建自定义用户
+    custom_user = user_factory(
+        username="custom_user",
+        full_name="Custom User"
+    )
+
+    # 创建课程
+    lesson = lesson_factory(
+        chapter_number=1,
+        lesson_number=1,
+        title="Test Lesson"
+    )
+
+    # 创建学习进度
+    progress = progress_factory(
+        user_id=user1.id,
+        lesson_id=lesson.id,
+        completed=1
+    )
+```
+
+### 可用的工厂 Fixtures
+
+- `user_factory()` - 创建用户
+- `lesson_factory()` - 创建课程
+- `progress_factory()` - 创建学习进度
+- `submission_factory()` - 创建代码提交
+- `chat_message_factory()` - 创建聊天消息
+
+### 直接使用工厂函数
+
+除了 fixtures，你也可以直接导入工厂函数：
+
+```python
+from tests.factories import (
+    create_user_data,
+    create_lesson_data,
+    create_progress_data,
+    create_multiple,
+    MockScenarios
+)
+
+def test_with_direct_factory(db_session):
+    # 创建单个用户
+    user = create_user_data(db_session, username="test_user")
+
+    # 批量创建用户
+    users = create_multiple(create_user_data, 5, db_session)
+
+    # 使用预设场景
+    new_user = MockScenarios.new_user(db_session)
+    experienced_user = MockScenarios.experienced_user_with_progress(db_session)
+```
+
+### 预设场景
+
+使用 `MockScenarios` 快速创建常见测试场景：
+
+```python
+from tests.factories import MockScenarios
+
+def test_scenarios(db_session):
+    # 新用户场景
+    new_user = MockScenarios.new_user(db_session)
+    assert new_user.username == "new_user"
+
+    # 有学习进度的用户
+    experienced_user = MockScenarios.experienced_user_with_progress(db_session)
+    # 自动创建了 3 个已完成的课程进度
+
+    # 第一课
+    first_lesson = MockScenarios.first_lesson(db_session)
+    assert first_lesson.chapter_number == 1
+    assert first_lesson.lesson_number == 1
+
+    # 成功的代码提交
+    success = MockScenarios.successful_submission(db_session)
+    assert success.success is True
+
+    # 失败的代码提交
+    failure = MockScenarios.failed_submission(db_session)
+    assert failure.success is False
+```
+
 ## 编写测试
 
 ### 基本测试示例

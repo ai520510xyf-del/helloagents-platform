@@ -188,15 +188,14 @@ def create_submission_data(db_session, user_id: int = None, lesson_id: int = Non
         lesson = create_lesson_data(db_session)
         lesson_id = lesson.id
 
-    success = faker.choice([True, False])
+    status = faker.choice(['success', 'error'])
 
     default_data = {
         "user_id": user_id,
         "lesson_id": lesson_id,
         "code": faker.code(),
-        "success": success,
-        "output": faker.paragraph() if success else "",
-        "error": None if success else faker.sentence(),
+        "status": status,  # 使用 status 而不是 success
+        "output": faker.paragraph() if status == 'success' else f"Error: {faker.sentence()}",
         "execution_time": faker.float_number(0.001, 5.0, 3),
     }
 
@@ -210,7 +209,7 @@ def create_submission_data(db_session, user_id: int = None, lesson_id: int = Non
     return submission
 
 
-def create_chat_message_data(db_session, user_id: int = None, **overrides):
+def create_chat_message_data(db_session, user_id: int = None, lesson_id: int = None, **overrides):
     """
     创建聊天消息测试数据
     """
@@ -223,8 +222,10 @@ def create_chat_message_data(db_session, user_id: int = None, **overrides):
 
     default_data = {
         "user_id": user_id,
-        "message": faker.sentence(10),
-        "response": faker.paragraph(),
+        "lesson_id": lesson_id,  # 可以为 None
+        "role": faker.choice(['user', 'assistant']),
+        "content": faker.sentence(10),
+        "extra_data": '{}',
     }
 
     data = {**default_data, **overrides}
@@ -304,9 +305,8 @@ class MockScenarios:
             db_session,
             user_id=user_id,
             lesson_id=lesson_id,
-            success=True,
+            status='success',
             output="Hello, World!",
-            error=None,
             execution_time=0.123
         )
 
@@ -317,8 +317,7 @@ class MockScenarios:
             db_session,
             user_id=user_id,
             lesson_id=lesson_id,
-            success=False,
-            output="",
-            error="SyntaxError: invalid syntax",
+            status='error',
+            output="Error: SyntaxError: invalid syntax",
             execution_time=0.001
         )

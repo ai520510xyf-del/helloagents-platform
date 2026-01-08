@@ -156,58 +156,221 @@ describe('needsMigration', () => {
 
 ## Mock Service Worker (MSW)
 
-使用 MSW 模拟 API 请求（推荐用于集成测试）：
+✅ **已配置完成** - 使用 MSW 模拟 API 请求（推荐用于集成测试）
 
-### 安装
-```bash
-npm install -D msw
-```
+### 配置说明
 
-### 设置
+MSW 已经集成到测试环境中，配置文件位于：
+- `src/test/mocks/handlers.ts` - API mock handlers
+- `src/test/mocks/server.ts` - Node.js 环境的 MSW server
+- `src/test/mocks/browser.ts` - 浏览器环境的 MSW worker（开发时使用）
+- `src/test/setup.ts` - 自动启动和关闭 MSW server
+
+### 基本使用
+
+测试会自动使用预定义的 mock handlers：
+
 ```typescript
-// src/test/mocks/handlers.ts
-import { http, HttpResponse } from 'msw'
+import { render, screen, waitFor } from '@testing-library/react'
+import { describe, it, expect } from 'vitest'
 
-export const handlers = [
-  http.post('/api/execute', () => {
-    return HttpResponse.json({
-      success: true,
-      output: 'Mocked output'
-    })
-  }),
-
-  http.get('/api/lessons/:id', ({ params }) => {
-    return HttpResponse.json({
-      lesson_id: params.id,
-      title: 'Test Lesson',
-      content: '# Test Content'
-    })
-  })
-]
-
-// src/test/mocks/server.ts
-import { setupServer } from 'msw/node'
-import { handlers } from './handlers'
-
-export const server = setupServer(...handlers)
-
-// src/test/setup.ts
-import { beforeAll, afterEach, afterAll } from 'vitest'
-import { server } from './mocks/server'
-
-beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
-```
-
-### 使用
-```typescript
 it('应该获取课程内容', async () => {
-  render(<LessonView lessonId="1" />)
+  render(<LessonView chapterNum={1} lessonNum={1} />)
 
   await waitFor(() => {
-    expect(screen.getByText('Test Lesson')).toBeInTheDocument()
+    expect(screen.getByText(/Lesson 1.1/i)).toBeInTheDocument()
   })
+})
+```
+
+### 动态覆盖 Mock 响应
+
+在特定测试中覆盖默认的 mock 行为：
+
+```typescript
+import { server } from '@/test/mocks/server'
+import { http, HttpResponse } from 'msw'
+
+it('应该处理 API 错误', async () => {
+  // 覆盖特定端点的响应
+  server.use(
+    http.post('http://localhost:8000/api/v1/execute', () => {
+      return HttpResponse.json(
+        { detail: 'Internal Server Error' },
+        { status: 500 }
+      )
+    })
+  )
+
+  render(<CodeExecutor />)
+  // ... 测试错误处理
+})
+```
+
+### 使用测试工具函数
+
+我们提供了便捷的工具函数来动态修改 API 响应：
+
+```typescript
+import { mockApiEndpoint, mockApiError } from '@/test/utils'
+
+it('应该处理成功响应', async () => {
+  mockApiEndpoint('post', 'http://localhost:8000/api/v1/execute', {
+    success: true,
+    output: 'Custom output'
+  })
+
+  // ... 测试
+})
+
+it('应该处理错误响应', async () => {
+  mockApiError('post', 'http://localhost:8000/api/v1/execute', 'Network error', 500)
+
+  // ... 测试错误处理
+})
+```
+
+### 预定义的 Mock 数据
+
+可以直接使用预定义的 mock 数据：
+
+```typescript
+import { mockData } from '@/test/mocks/handlers'
+
+it('测试示例', () => {
+  const user = mockData.user
+  const lesson = mockData.lesson
+  // ... 使用 mock 数据
+})
+```
+
+### 查看所有 Mock Handlers
+
+查看 `src/test/mocks/handlers.ts` 了解所有预配置的 API endpoints：
+- Health Check: `GET /api/v1/health`
+- Execute Code: `POST /api/v1/execute`
+- Get AI Hint: `POST /api/v1/hint`
+- Get Lesson: `GET /api/v1/lessons/:chapterNum/:lessonNum`
+- Chat with AI: `POST /api/v1/chat`
+- User Progress: `GET/PUT /api/v1/users/:userId/progress`
+- Submit Code: `POST /api/v1/submissions`
+- Migration: `POST /api/v1/migrate`
+- Chat History: `GET /api/v1/users/:userId/chat-history`
+- Get All Lessons: `GET /api/v1/lessons`
+
+## 测试数据生成器 (Faker)
+
+✅ **已配置完成** - 使用 `@faker-js/faker` 生成测试数据
+
+### 使用测试工厂函数
+
+我们提供了丰富的工厂函数来生成测试数据，位于 `src/test/factories.ts`：
+
+```typescript
+import {
+  createMockUser,
+  createMockLesson,
+  createMockProgress,
+  createMockCodeSubmission,
+  createMockChatMessage,
+  createMockCodeExecutionResponse,
+  createMockAIHintResponse,
+  createMockArray,
+  mockScenarios
+} from '@/test/factories'
+
+describe('测试示例', () => {
+  it('使用工厂函数生成数据', () => {
+    // 生成随机用户
+    const user = createMockUser()
+
+    // 生成自定义用户
+    const customUser = createMockUser({
+      username: 'test_user',
+      full_name: 'Test User'
+    })
+
+    // 生成课程
+    const lesson = createMockLesson({
+      chapter_number: 1,
+      lesson_number: 1
+    })
+
+    // 批量生成数据
+    const users = createMockArray(createMockUser, 5)
+
+    // 使用预设场景
+    const newUser = mockScenarios.newUser()
+    const firstLesson = mockScenarios.firstLesson()
+  })
+})
+```
+
+### 可用的工厂函数
+
+- `createMockUser()` - 生成用户数据
+- `createMockLesson()` - 生成课程数据
+- `createMockProgress()` - 生成学习进度数据
+- `createMockCodeSubmission()` - 生成代码提交数据
+- `createMockChatMessage()` - 生成聊天消息数据
+- `createMockCodeExecutionResponse()` - 生成代码执行响应
+- `createMockAIHintResponse()` - 生成 AI 提示响应
+- `createMockArray(factory, count)` - 批量生成数据
+
+### 预设场景
+
+使用 `mockScenarios` 获取常用的测试场景：
+
+```typescript
+import { mockScenarios } from '@/test/factories'
+
+// 新用户
+const newUser = mockScenarios.newUser()
+
+// 有经验的用户
+const experiencedUser = mockScenarios.experiencedUser()
+
+// 第一课
+const firstLesson = mockScenarios.firstLesson()
+
+// 成功的代码执行
+const success = mockScenarios.successfulExecution()
+
+// 失败的代码执行
+const failure = mockScenarios.failedExecution()
+```
+
+### 可重复的测试数据
+
+使用 `seedFaker()` 设置种子，生成可重复的测试数据：
+
+```typescript
+import { seedFaker, createMockUser } from '@/test/factories'
+
+it('生成可重复的数据', () => {
+  seedFaker(12345) // 使用固定种子
+  const user1 = createMockUser()
+
+  seedFaker(12345) // 相同种子
+  const user2 = createMockUser()
+
+  expect(user1).toEqual(user2) // 相同的数据
+})
+```
+
+### 模拟网络延迟
+
+使用 `randomDelay()` 模拟网络请求延迟：
+
+```typescript
+import { randomDelay } from '@/test/factories'
+
+it('测试加载状态', async () => {
+  render(<Component />)
+
+  await randomDelay(100, 300) // 随机延迟 100-300ms
+
+  expect(screen.getByText('Loading...')).toBeInTheDocument()
 })
 ```
 
