@@ -149,7 +149,7 @@ def sample_submission(db_session, sample_user, sample_lesson):
         user_id=sample_user.id,
         lesson_id=sample_lesson.id,
         code="print('Hello, World!')",
-        success=True,
+        status='success',
         output="Hello, World!\n",
         execution_time=0.123
     )
@@ -167,8 +167,8 @@ def sample_chat_message(db_session, sample_user):
 
     chat_message = ChatMessage(
         user_id=sample_user.id,
-        message="How do I print in Python?",
-        response="You can use the print() function."
+        role="user",
+        content="How do I print in Python?"
     )
     db_session.add(chat_message)
     db_session.commit()
