@@ -447,8 +447,16 @@ async def execute_code(
     except HelloAgentsException:
         # 其他HelloAgents异常 - 让中间件处理
         raise
+    except (SyntaxError, NameError, TypeError, ValueError, AttributeError, ImportError, KeyError, IndexError) as e:
+        # 代码执行相关的异常 - 返回200的错误响应（用户代码问题，不是服务器问题）
+        return CodeExecutionResponse(
+            success=False,
+            output="",
+            error=str(e),
+            execution_time=0.0
+        )
     except Exception as e:
-        # 未预期的异常 - 让中间件处理（转换为500错误）
+        # 未知异常 - 让中间件处理为500错误
         raise e
 
 @app.get("/api/lessons")

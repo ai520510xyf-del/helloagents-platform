@@ -186,10 +186,10 @@ class CodeSandbox:
             start_time = time.time()
 
             # 在容器中执行代码
+            # 注意: timeout参数在旧版docker库中不支持，已移除以兼容CI环境
             result = container.exec_run(
                 ["python", "-c", code],
-                demux=True,
-                timeout=self.timeout
+                demux=True
             )
 
             execution_time = time.time() - start_time

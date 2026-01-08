@@ -631,10 +631,10 @@ class ContainerPool:
             echo "processes:$process_count"
             """
 
+            # 注意: timeout参数在旧版docker库中不支持，已移除以兼容CI环境
             result = container.exec_run(
                 ["sh", "-c", reset_script],
-                detach=False,
-                timeout=ContainerPoolConfig.RESET_TIMEOUT
+                detach=False
             )
 
             reset_time = time.time() - reset_start
@@ -753,10 +753,8 @@ class ContainerPool:
                 return False
 
             # 2. 检查容器响应性 (echo 测试, ~20ms)
-            result = container.exec_run(
-                "echo ok",
-                timeout=ContainerPoolConfig.QUICK_HEALTH_CHECK_TIMEOUT
-            )
+            # 注意: timeout参数在旧版docker库中不支持，已移除以兼容CI环境
+            result = container.exec_run("echo ok")
 
             is_healthy = result.exit_code == 0
 
@@ -816,10 +814,8 @@ class ContainerPool:
                 return False
 
             # 2. 检查容器响应性 (echo 测试)
-            result = container.exec_run(
-                "echo health_check",
-                timeout=ContainerPoolConfig.DEEP_HEALTH_CHECK_TIMEOUT
-            )
+            # 注意: timeout参数在旧版docker库中不支持，已移除以兼容CI环境
+            result = container.exec_run("echo health_check")
             if result.exit_code != 0:
                 logger.warning(
                     "deep_check_not_responsive",
