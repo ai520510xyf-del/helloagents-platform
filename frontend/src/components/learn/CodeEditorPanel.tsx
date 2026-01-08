@@ -68,6 +68,7 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
             onClick={onRun}
             isLoading={isRunning}
             disabled={isRunning}
+            data-testid="run-button"
           >
             <Play className="h-4 w-4 mr-1" />
             运行代码
@@ -77,6 +78,7 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
             size="sm"
             onClick={onStop}
             disabled={!isRunning}
+            data-testid="stop-button"
           >
             <StopCircle className="h-4 w-4 mr-1" />
             停止
@@ -86,13 +88,14 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
             size="sm"
             onClick={onReset}
             className={theme === 'dark' ? '' : 'border-gray-300 hover:bg-gray-100 text-gray-700'}
+            data-testid="reset-button"
           >
             <RotateCcw className="h-4 w-4 mr-1" />
             重置
           </Button>
         </div>
 
-        <div className={`text-xs ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`}>
+        <div className={`text-xs ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`} data-testid="cursor-position">
           行 {cursorPosition.line}, 列 {cursorPosition.column}
         </div>
       </div>

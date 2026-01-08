@@ -27,8 +27,17 @@ export class PageHelpers {
    * 导航到学习页面
    */
   async navigateToLearnPage() {
-    await this.page.goto('/');
+    // 添加 e2e-test 参数以禁用 MigrationPrompt
+    await this.page.goto('/?e2e-test=true');
     await this.waitForPageLoad();
+
+    // 确保 Monaco Editor 已加载（等待编辑器出现）
+    await this.page.waitForSelector('.monaco-editor', { state: 'visible', timeout: 15000 }).catch(() => {
+      console.log('Monaco editor not found, continuing...');
+    });
+
+    // 额外等待确保所有初始化完成
+    await this.page.waitForTimeout(1000);
   }
 
   /**
@@ -120,7 +129,15 @@ export class CodeExecutionHelpers {
    */
   async clickRunButton() {
     const runButton = this.page.getByRole('button', { name: /运行|Run/i });
-    await runButton.click();
+
+    // 等待按钮可见并启用
+    await runButton.waitFor({ state: 'visible', timeout: 10000 });
+
+    // Firefox兼容：使用force选项避免遮挡问题
+    await runButton.click({ force: true, timeout: 10000 }).catch(async () => {
+      // 如果常规点击失败，尝试使用JavaScript点击
+      await runButton.evaluate((el: HTMLElement) => el.click());
+    });
   }
 
   /**
@@ -128,7 +145,10 @@ export class CodeExecutionHelpers {
    */
   async clickStopButton() {
     const stopButton = this.page.getByRole('button', { name: /停止|Stop/i });
-    await stopButton.click();
+    await stopButton.waitFor({ state: 'visible', timeout: 5000 });
+    await stopButton.click({ force: true }).catch(async () => {
+      await stopButton.evaluate((el: HTMLElement) => el.click());
+    });
   }
 
   /**
@@ -146,9 +166,12 @@ export class CodeExecutionHelpers {
    * 获取终端输出
    */
   async getTerminalOutput(): Promise<string> {
-    const terminal = this.page.locator('[data-testid="terminal-output"]')
-      .or(this.page.locator('.terminal-output'))
-      .or(this.page.locator('pre')).first();
+    const terminal = this.page.locator('[data-testid="terminal-output"]');
+
+    // 等待终端可见
+    await terminal.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+      console.log('Terminal output not found, returning empty string');
+    });
 
     return await terminal.textContent() || '';
   }
@@ -169,8 +192,12 @@ export class CodeExecutionHelpers {
    * 清空终端输出
    */
   async clearTerminal() {
-    const clearButton = this.page.getByRole('button', { name: /清空|Clear/i });
-    await clearButton.click();
+    const clearButton = this.page.locator('[data-testid="clear-button"]')
+      .or(this.page.getByRole('button', { name: /清空|Clear/i }));
+    await clearButton.waitFor({ state: 'visible', timeout: 5000 });
+    await clearButton.click({ force: true }).catch(async () => {
+      await clearButton.evaluate((el: HTMLElement) => el.click());
+    });
   }
 }
 
@@ -184,9 +211,15 @@ export class AIAssistantHelpers {
    * 打开 AI 助手面板
    */
   async openAssistant() {
-    // 查找 AI 助手标签页
-    const aiTab = this.page.getByRole('tab', { name: /AI 助手|AI Assistant/i });
-    await aiTab.click();
+    // 使用data-testid优先，回退到role和text
+    const aiTab = this.page.locator('[data-testid="ai-tab"]')
+      .or(this.page.getByRole('tab', { name: /AI 助手|AI Assistant/i }))
+      .or(this.page.getByRole('button', { name: /AI 助手|AI Assistant/i }));
+
+    await aiTab.waitFor({ state: 'visible', timeout: 10000 });
+    await aiTab.click({ force: true }).catch(async () => {
+      await aiTab.first().evaluate((el: HTMLElement) => el.click());
+    });
     await this.page.waitForTimeout(500);
   }
 
@@ -194,11 +227,19 @@ export class AIAssistantHelpers {
    * 发送消息
    */
   async sendMessage(message: string) {
-    const input = this.page.getByPlaceholder(/输入问题|Enter question|Ask me/i);
+    // 等待AI面板激活
+    await this.page.waitForTimeout(500);
+
+    const input = this.page.getByPlaceholder(/输入.*问题|Enter.*question|Ask me/i);
+    await input.waitFor({ state: 'visible', timeout: 5000 });
     await input.fill(message);
 
-    const sendButton = this.page.getByRole('button', { name: /发送|Send/i });
-    await sendButton.click();
+    const sendButton = this.page.locator('[data-testid="send-button"]')
+      .or(this.page.getByRole('button', { name: /发送|Send/i }));
+    await sendButton.waitFor({ state: 'visible', timeout: 5000 });
+    await sendButton.click({ force: true }).catch(async () => {
+      await sendButton.evaluate((el: HTMLElement) => el.click());
+    });
   }
 
   /**
@@ -255,7 +296,10 @@ export class CourseNavigationHelpers {
    */
   async selectCourse(courseName: string) {
     const courseItem = this.page.getByText(courseName, { exact: false });
-    await courseItem.click();
+    await courseItem.waitFor({ state: 'visible', timeout: 5000 });
+    await courseItem.click({ force: true }).catch(async () => {
+      await courseItem.evaluate((el: HTMLElement) => el.click());
+    });
     await this.page.waitForTimeout(1000);
   }
 

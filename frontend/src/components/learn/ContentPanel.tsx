@@ -45,6 +45,9 @@ export function ContentPanel({
               ? 'bg-primary/10 text-primary'
               : (theme === 'dark' ? 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900')
           }`}
+          role="tab"
+          aria-selected={activeTab === 'content'}
+          data-testid="content-tab"
         >
           📖 课程内容
         </button>
@@ -55,6 +58,9 @@ export function ContentPanel({
               ? 'bg-primary/10 text-primary'
               : (theme === 'dark' ? 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900')
           }`}
+          role="tab"
+          aria-selected={activeTab === 'ai'}
+          data-testid="ai-tab"
         >
           <Bot className="h-4 w-4 inline-block mr-1" /> AI 助手
         </button>
@@ -64,7 +70,7 @@ export function ContentPanel({
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         {activeTab === 'content' ? (
           /* 课程内容 */
-          <div className={`p-6 prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
+          <div className={`p-6 prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`} data-testid="content-panel">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
@@ -104,9 +110,9 @@ export function ContentPanel({
           </div>
         ) : (
           /* AI 助手 - 聊天界面 */
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col" data-testid="ai-chat">
             {/* 聊天消息列表 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" data-testid="chat-messages">
               {chatMessages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                   <div className="h-16 w-16 bg-ai/10 rounded-full flex items-center justify-center mb-4">
@@ -128,6 +134,7 @@ export function ContentPanel({
                   <div
                     key={index}
                     className={`flex gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    data-testid="chat-message"
                   >
                     {msg.role === 'assistant' && (
                       <div className="h-8 w-8 bg-ai/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -140,6 +147,7 @@ export function ContentPanel({
                           ? 'bg-primary text-white'
                           : (theme === 'dark' ? 'bg-bg-elevated text-text-primary' : 'bg-gray-100 text-gray-900')
                       }`}
+                      data-testid={msg.role === 'user' ? 'user-message' : 'ai-message'}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     </div>
@@ -152,7 +160,7 @@ export function ContentPanel({
                 ))
               )}
               {isChatLoading && (
-                <div className="flex gap-3">
+                <div className="flex gap-3" data-testid="ai-loading">
                   <div className="h-8 w-8 bg-ai/10 rounded-full flex items-center justify-center flex-shrink-0">
                     <Bot className="h-4 w-4 text-ai" />
                   </div>
@@ -193,6 +201,7 @@ export function ContentPanel({
                   size="sm"
                   onClick={onSendMessage}
                   disabled={!chatInput.trim() || isChatLoading}
+                  data-testid="send-button"
                 >
                   发送
                 </Button>

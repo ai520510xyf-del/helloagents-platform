@@ -26,6 +26,14 @@ export function MigrationPrompt({ theme = 'dark' }: MigrationPromptProps) {
     // 检查是否需要迁移
     const checkMigration = async () => {
       try {
+        // E2E测试环境：自动跳过迁移提示，避免遮挡测试
+        if (window.location.search.includes('e2e-test') ||
+            (window as any).playwright ||
+            (window as any).__PLAYWRIGHT__) {
+          setIsChecking(false);
+          return;
+        }
+
         const needs = needsMigration();
         if (needs) {
           const previewData = getMigrationPreview();

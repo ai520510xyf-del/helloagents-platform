@@ -32,12 +32,13 @@ export function TerminalOutput({ output, isRunning, theme, onClear }: TerminalOu
             size="sm"
             onClick={onClear}
             className="text-xs"
+            data-testid="clear-button"
           >
             清空
           </Button>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-sm">
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 font-mono text-sm" data-testid="terminal-output">
         {output ? (
           <pre className={`whitespace-pre-wrap ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{output}</pre>
         ) : (

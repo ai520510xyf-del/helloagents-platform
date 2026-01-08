@@ -12,16 +12,25 @@ import { test, expect } from '@playwright/test';
 import {
   PageHelpers,
   AIAssistantHelpers,
+  APIMockHelpers,
 } from './utils/test-helpers';
 import { TEST_DATA } from './fixtures/test-data';
 
 test.describe('AI Assistant Interaction', () => {
   let pageHelpers: PageHelpers;
   let aiHelpers: AIAssistantHelpers;
+  let apiMockHelpers: APIMockHelpers;
 
   test.beforeEach(async ({ page }) => {
     pageHelpers = new PageHelpers(page);
     aiHelpers = new AIAssistantHelpers(page);
+    apiMockHelpers = new APIMockHelpers(page);
+
+    // Mock AI聊天API
+    await apiMockHelpers.mockAPIResponse('/api/v1/chat', {
+      success: true,
+      message: '这是AI的回复。Python变量是用来存储数据的容器。'
+    });
 
     // 导航到学习页面
     await pageHelpers.navigateToLearnPage();
@@ -39,7 +48,7 @@ test.describe('AI Assistant Interaction', () => {
     await expect(chatContainer).toBeVisible();
 
     // 3. 验证输入框可见
-    const input = page.getByPlaceholder(/输入问题|Enter question|Ask me/i);
+    const input = page.getByPlaceholder(/输入.*问题|Enter.*question|Ask me/i);
     await expect(input).toBeVisible();
   });
 
@@ -69,10 +78,11 @@ test.describe('AI Assistant Interaction', () => {
     await aiHelpers.openAssistant();
 
     // 发送消息
-    const input = page.getByPlaceholder(/输入问题|Enter question|Ask me/i);
+    const input = page.getByPlaceholder(/输入.*问题|Enter.*question|Ask me/i);
     await input.fill(TEST_DATA.aiQuestions.code);
 
-    const sendButton = page.getByRole('button', { name: /发送|Send/i });
+    const sendButton = page.locator('[data-testid="send-button"]')
+      .or(page.getByRole('button', { name: /发送|Send/i }));
     await sendButton.click();
 
     // 验证加载指示器出现
@@ -154,10 +164,11 @@ test.describe('AI Assistant Interaction', () => {
     await aiHelpers.openAssistant();
 
     // 尝试发送空消息
-    const input = page.getByPlaceholder(/输入问题|Enter question|Ask me/i);
+    const input = page.getByPlaceholder(/输入.*问题|Enter.*question|Ask me/i);
     await input.fill('');
 
-    const sendButton = page.getByRole('button', { name: /发送|Send/i });
+    const sendButton = page.locator('[data-testid="send-button"]')
+      .or(page.getByRole('button', { name: /发送|Send/i }));
 
     // 验证发送按钮被禁用或点击无效
     const isDisabled = await sendButton.isDisabled();

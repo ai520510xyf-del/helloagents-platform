@@ -31,16 +31,15 @@ test.describe('Course Navigation', () => {
 
   test('should display course menu on page load', async ({ page }) => {
     // 1. 验证课程菜单可见
-    const courseMenu = page.locator('[data-testid="course-menu"]')
-      .or(page.locator('.course-menu'))
-      .or(page.locator('nav'));
+    const courseMenu = page.locator('[data-testid="course-menu"]');
 
     await expect(courseMenu).toBeVisible();
 
     // 2. 验证至少有一个课程项
-    const courseItems = page.locator('[data-testid="course-item"]')
-      .or(page.locator('.course-item'))
-      .or(page.locator('li'));
+    const courseItems = page.locator('[data-testid="course-item"]');
+
+    // 等待课程项加载
+    await courseItems.first().waitFor({ state: 'visible', timeout: 5000 });
 
     const count = await courseItems.count();
     expect(count).toBeGreaterThan(0);
@@ -288,27 +287,28 @@ test.describe('Course Navigation', () => {
 
   test('should scroll course menu when many courses exist', async ({ page }) => {
     // 查找课程菜单容器
-    const courseMenu = page.locator('[data-testid="course-menu"]')
-      .or(page.locator('.course-menu'))
-      .or(page.locator('nav'));
+    const courseMenu = page.locator('[data-testid="course-menu"]');
 
-    if (await courseMenu.isVisible()) {
-      // 检查菜单是否可滚动
-      const isScrollable = await courseMenu.evaluate((el) => {
-        return el.scrollHeight > el.clientHeight;
+    await courseMenu.waitFor({ state: 'visible', timeout: 5000 });
+
+    // 检查菜单是否可滚动
+    const isScrollable = await courseMenu.evaluate((el) => {
+      return el.scrollHeight > el.clientHeight;
+    });
+
+    // 如果可滚动，测试滚动功能
+    if (isScrollable) {
+      await courseMenu.evaluate((el) => {
+        el.scrollTop = el.scrollHeight;
       });
 
-      // 如果可滚动，测试滚动功能
-      if (isScrollable) {
-        await courseMenu.evaluate((el) => {
-          el.scrollTop = el.scrollHeight;
-        });
+      await page.waitForTimeout(500);
 
-        await page.waitForTimeout(500);
-
-        const scrollTop = await courseMenu.evaluate((el) => el.scrollTop);
-        expect(scrollTop).toBeGreaterThan(0);
-      }
+      const scrollTop = await courseMenu.evaluate((el) => el.scrollTop);
+      expect(scrollTop).toBeGreaterThan(0);
+    } else {
+      // 如果不可滚动，测试也应该通过（菜单可能不够长）
+      expect(isScrollable).toBe(false);
     }
   });
 

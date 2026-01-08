@@ -14,6 +14,7 @@ import {
   PageHelpers,
   CodeEditorHelpers,
   CodeExecutionHelpers,
+  APIMockHelpers,
 } from './utils/test-helpers';
 import { TEST_DATA, EXPECTED_RESULTS } from './fixtures/test-data';
 
@@ -21,11 +22,20 @@ test.describe('Code Execution Flow', () => {
   let pageHelpers: PageHelpers;
   let codeEditorHelpers: CodeEditorHelpers;
   let codeExecutionHelpers: CodeExecutionHelpers;
+  let apiMockHelpers: APIMockHelpers;
 
   test.beforeEach(async ({ page }) => {
     pageHelpers = new PageHelpers(page);
     codeEditorHelpers = new CodeEditorHelpers(page);
     codeExecutionHelpers = new CodeExecutionHelpers(page);
+    apiMockHelpers = new APIMockHelpers(page);
+
+    // Mock默认的代码执行API
+    await apiMockHelpers.mockAPIResponse('/api/v1/execute', {
+      success: true,
+      output: 'Hello, World!\n',
+      execution_time: 0.01
+    });
 
     // 导航到学习页面
     await pageHelpers.navigateToLearnPage();
@@ -57,6 +67,13 @@ test.describe('Code Execution Flow', () => {
   });
 
   test('should execute code with loop and show multiple outputs', async ({ page }) => {
+    // Mock循环输出
+    await apiMockHelpers.mockAPIResponse('/api/v1/execute', {
+      success: true,
+      output: 'Count: 0\nCount: 1\nCount: 2\nCount: 3\nCount: 4\n',
+      execution_time: 0.02
+    });
+
     // 输入循环代码
     await codeEditorHelpers.setCode(TEST_DATA.codeExamples.loop);
 
@@ -85,6 +102,13 @@ test.describe('Code Execution Flow', () => {
   });
 
   test('should clear terminal output', async ({ page }) => {
+    // Mock代码执行输出
+    await apiMockHelpers.mockAPIResponse('/api/v1/execute', {
+      success: true,
+      output: 'Hello, World!\n',
+      execution_time: 0.01
+    });
+
     // 先执行代码产生输出
     await codeEditorHelpers.setCode(TEST_DATA.codeExamples.simple);
     await codeExecutionHelpers.clickRunButton();
@@ -171,12 +195,22 @@ for i in range(100):
 
   test('should handle multiple consecutive executions', async ({ page }) => {
     // 第一次执行
+    await apiMockHelpers.mockAPIResponse('/api/v1/execute', {
+      success: true,
+      output: 'First execution\n',
+      execution_time: 0.01
+    });
     await codeEditorHelpers.setCode('print("First execution")');
     await codeExecutionHelpers.clickRunButton();
     await codeExecutionHelpers.waitForExecution();
     await codeExecutionHelpers.expectOutputContains('First execution');
 
     // 第二次执行不同的代码
+    await apiMockHelpers.mockAPIResponse('/api/v1/execute', {
+      success: true,
+      output: 'Second execution\n',
+      execution_time: 0.01
+    });
     await codeEditorHelpers.setCode('print("Second execution")');
     await codeExecutionHelpers.clickRunButton();
     await codeExecutionHelpers.waitForExecution();

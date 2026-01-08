@@ -29,18 +29,18 @@ const getStatusIcon = (status: string) => {
 
 export const CourseMenu = memo(function CourseMenu({ currentLesson, theme, onLessonChange }: CourseMenuProps) {
   return (
-    <div className={`h-full overflow-y-auto border-r custom-scrollbar ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
+    <div className={`h-full overflow-y-auto border-r custom-scrollbar ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`} data-testid="course-menu">
       <div className="p-4">
         <div className="flex items-center gap-2 text-sm font-semibold mb-4">
           <BookOpen className="h-4 w-4" />
           <span>课程目录</span>
         </div>
 
-        <nav className="space-y-1">
+        <nav className="space-y-1" role="navigation">
           {allChapters.map((chapter, chapterIndex) => (
             <div key={chapter.id}>
               {chapterIndex > 0 && <div className="h-4" />}
-              <div className={`text-xs mb-2 ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`}>
+              <div className={`text-xs mb-2 ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`} data-testid="course-category">
                 第{chapter.id}章 {chapter.title}
               </div>
               {chapter.lessons.map((lesson) => {
@@ -56,6 +56,8 @@ export const CourseMenu = memo(function CourseMenu({ currentLesson, theme, onLes
                         ? 'bg-primary/10 border-l-2 border-primary' + (theme === 'dark' ? ' text-text-primary' : ' text-gray-900')
                         : (theme === 'dark' ? 'hover:bg-bg-elevated text-text-secondary' : 'hover:bg-gray-200 text-gray-700')}
                     `}
+                    data-testid="course-item"
+                    aria-current={isCurrent ? 'page' : undefined}
                   >
                     {getStatusIcon(lesson.status)} {lesson.id} {lesson.title}
                   </button>
