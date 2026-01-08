@@ -6,6 +6,9 @@ import os
 from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 # 数据库文件路径
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -41,6 +44,12 @@ def set_sqlite_pragma(dbapi_conn, connection_record):
     # 临时文件存储在内存中
     cursor.execute("PRAGMA temp_store = MEMORY")
     cursor.close()
+
+    logger.debug(
+        "database_connection_established",
+        database_path=str(DATABASE_PATH),
+        optimizations_applied=True
+    )
 
 
 # Session 工厂
@@ -82,12 +91,35 @@ def init_db():
 
     注意：需要先导入所有模型，确保 Base.metadata 包含所有表
     """
-    # 导入所有模型（确保 Base.metadata 知道所有表）
-    from . import models  # noqa: F401
+    logger.info("database_initialization_started", database_path=str(DATABASE_PATH))
 
-    # 创建所有表
-    Base.metadata.create_all(bind=engine)
-    print(f'✅ Database initialized: {DATABASE_PATH}')
+    try:
+        # 导入所有模型（确保 Base.metadata 知道所有表）
+        from . import models  # noqa: F401
+
+        # 创建所有表
+        Base.metadata.create_all(bind=engine)
+
+        # 获取统计信息
+        tables = list(Base.metadata.tables.keys())
+
+        logger.info(
+            "database_initialization_completed",
+            database_path=str(DATABASE_PATH),
+            tables_count=len(tables),
+            tables=tables
+        )
+        print(f'✅ Database initialized: {DATABASE_PATH}')
+
+    except Exception as e:
+        logger.error(
+            "database_initialization_failed",
+            database_path=str(DATABASE_PATH),
+            error=str(e),
+            error_type=type(e).__name__,
+            exc_info=True
+        )
+        raise
 
 
 def drop_all_tables():

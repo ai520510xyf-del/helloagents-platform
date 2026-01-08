@@ -7,6 +7,9 @@
 import docker
 import time
 from typing import Tuple, Optional
+from .logger import get_logger
+
+logger = get_logger(__name__)
 
 class CodeSandbox:
     """
@@ -32,12 +35,17 @@ class CodeSandbox:
             # 检查镜像是否存在，不存在则拉取
             try:
                 self.client.images.get(self.image)
+                logger.info("docker_image_found", image=self.image)
             except docker.errors.ImageNotFound:
-                print(f"📦 拉取 Docker 镜像: {self.image}")
+                logger.info("docker_image_pulling", image=self.image)
                 self.client.images.pull(self.image)
+                logger.info("docker_image_pulled", image=self.image)
         except Exception as e:
-            print(f"⚠️  Docker 未连接: {str(e)}")
-            print("⚠️  将使用本地执行模式（不安全，仅用于开发）")
+            logger.warning(
+                "docker_unavailable",
+                error=str(e),
+                fallback="local_execution"
+            )
             self.client = None
 
     def _check_code_safety(self, code: str) -> Tuple[bool, Optional[str]]:
@@ -84,13 +92,25 @@ class CodeSandbox:
         Returns:
             (成功标志, 输出/错误信息, 执行时间)
         """
+        logger.info(
+            "sandbox_execution_started",
+            code_length=len(code),
+            execution_mode="docker" if self.client else "local"
+        )
+
         # 预检查代码安全性
         is_safe, error_msg = self._check_code_safety(code)
         if not is_safe:
+            logger.warning(
+                "sandbox_security_check_failed",
+                error=error_msg,
+                code_length=len(code)
+            )
             return False, error_msg, 0.0
 
         if self.client is None:
             # Docker 不可用，使用本地执行（仅开发环境）
+            logger.warning("sandbox_using_local_execution")
             return self._execute_local(code)
 
         try:
@@ -148,16 +168,41 @@ class CodeSandbox:
             exit_code = result.get('StatusCode', 1)
 
             if exit_code == 0:
+                logger.info(
+                    "sandbox_execution_completed",
+                    success=True,
+                    execution_time_ms=round(execution_time * 1000, 2),
+                    output_length=len(output)
+                )
                 return True, output, execution_time
             else:
+                logger.warning(
+                    "sandbox_execution_failed",
+                    exit_code=exit_code,
+                    execution_time_ms=round(execution_time * 1000, 2),
+                    output_length=len(output)
+                )
                 return False, output, execution_time
 
         except docker.errors.ContainerError as e:
             # 容器执行错误
-            return False, f"执行错误:\n{e.stderr.decode('utf-8')}", 0.0
+            error_msg = f"执行错误:\n{e.stderr.decode('utf-8')}"
+            logger.error(
+                "sandbox_container_error",
+                error=error_msg,
+                exc_info=True
+            )
+            return False, error_msg, 0.0
 
         except Exception as e:
-            return False, f"沙箱错误: {str(e)}", 0.0
+            error_msg = f"沙箱错误: {str(e)}"
+            logger.error(
+                "sandbox_unexpected_error",
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True
+            )
+            return False, error_msg, 0.0
 
     def _execute_local(self, code: str) -> Tuple[bool, str, float]:
         """

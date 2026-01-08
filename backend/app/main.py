@@ -13,9 +13,36 @@ import asyncio
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
 # 加载 .env 文件中的环境变量
 load_dotenv()
+
+# 初始化 Sentry（如果配置了 DSN）
+SENTRY_DSN = os.getenv("SENTRY_DSN")
+SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", "development")
+SENTRY_TRACES_SAMPLE_RATE = float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1"))
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=SENTRY_ENVIRONMENT,
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
+        integrations=[
+            FastApiIntegration(),
+            SqlalchemyIntegration(),
+        ],
+        # 发送默认的个人身份信息
+        send_default_pii=False,
+        # 附加请求体
+        attach_stacktrace=True,
+    )
+
+# 初始化日志系统
+from app.logger import get_logger
+logger = get_logger(__name__)
 
 # 导入数据库
 from app.database import get_db, init_db
@@ -44,6 +71,17 @@ deepseek_client = OpenAI(
     api_key=os.environ.get("DEEPSEEK_API_KEY"),
     base_url="https://api.deepseek.com/v1"  # 需要添加 /v1 后缀
 )
+
+# 添加日志中间件
+from app.middleware.logging_middleware import (
+    LoggingMiddleware,
+    PerformanceMonitoringMiddleware,
+    ErrorLoggingMiddleware
+)
+
+app.add_middleware(ErrorLoggingMiddleware)
+app.add_middleware(PerformanceMonitoringMiddleware, slow_request_threshold_ms=1000.0)
+app.add_middleware(LoggingMiddleware)
 
 # 配置 CORS - 允许前端访问
 app.add_middleware(
@@ -155,9 +193,26 @@ async def execute_code(
     使用 Docker 容器作为安全沙箱环境执行代码
     可选：保存代码提交记录到数据库
     """
+    logger.info(
+        "code_execution_started",
+        user_id=user_id,
+        lesson_id=lesson_id,
+        code_length=len(request.code),
+        language=request.language
+    )
+
     try:
         # 使用沙箱执行代码
         success, output, execution_time = sandbox.execute_python(request.code)
+
+        logger.info(
+            "code_execution_completed",
+            user_id=user_id,
+            lesson_id=lesson_id,
+            success=success,
+            execution_time_ms=round(execution_time * 1000, 2),
+            output_length=len(output)
+        )
 
         # 保存到数据库（如果提供了 user_id 和 lesson_id）
         if user_id and lesson_id:
@@ -300,6 +355,16 @@ async def chat_with_ai(
             "content": request.message
         })
 
+        # 记录 AI 调用开始
+        logger.info(
+            "ai_chat_started",
+            user_id=user_id,
+            lesson_id=request.lesson_id,
+            message_length=len(request.message),
+            has_code_context=bool(request.code),
+            conversation_history_length=len(request.conversation_history)
+        )
+
         # 调用 DeepSeek API
         response = deepseek_client.chat.completions.create(
             model="deepseek-chat",
@@ -310,6 +375,16 @@ async def chat_with_ai(
 
         # 提取回复内容
         assistant_message = response.choices[0].message.content
+
+        # 记录 AI 调用完成
+        logger.info(
+            "ai_chat_completed",
+            user_id=user_id,
+            lesson_id=request.lesson_id,
+            response_length=len(assistant_message),
+            model="deepseek-chat",
+            total_tokens=response.usage.total_tokens if hasattr(response, 'usage') else None
+        )
 
         # 保存聊天记录到数据库（如果提供了 user_id）
         if user_id:
@@ -354,7 +429,14 @@ async def chat_with_ai(
         )
 
     except Exception as e:
-        print(f"AI 聊天错误: {str(e)}")
+        logger.error(
+            "ai_chat_failed",
+            user_id=user_id,
+            lesson_id=request.lesson_id,
+            error=str(e),
+            error_type=type(e).__name__,
+            exc_info=True
+        )
         return ChatResponse(
             message="抱歉，AI 助手暂时无法回复。请稍后再试。",
             success=False
