@@ -6,7 +6,7 @@
  * - 拆分组件：NavigationBar, CourseMenu, CodeEditorPanel, ContentPanel, TerminalOutput
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import { MigrationPrompt } from '../components/MigrationPrompt';
 import { NavigationBar } from '../components/learn/NavigationBar';
@@ -92,13 +92,13 @@ export function LearnPage() {
     }
   }, [code, currentLesson]);
 
-  // 切换主题
-  const toggleTheme = () => {
+  // 切换主题 - 使用 useCallback 稳定引用
+  const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
+  }, []);
 
-  // 切换课程
-  const handleLessonChange = async (lessonId: string) => {
+  // 切换课程 - 使用 useCallback 稳定引用
+  const handleLessonChange = useCallback(async (lessonId: string) => {
     await changeLesson(lessonId);
 
     // 从本地缓存加载该课程的代码和聊天历史
@@ -107,10 +107,10 @@ export function LearnPage() {
 
     // 重置其他状态
     clearOutput();
-  };
+  }, [changeLesson, clearOutput]);
 
-  // 重置代码
-  const handleReset = () => {
+  // 重置代码 - 使用 useCallback 稳定引用
+  const handleReset = useCallback(() => {
     if (!currentLesson) return;
 
     // 清除当前课程的本地缓存
@@ -123,10 +123,25 @@ export function LearnPage() {
     // 重置代码区域为空
     setCode('');
     clearOutput();
-  };
+  }, [currentLesson, clearOutput]);
 
-  // 计算当前进度
-  const progress = calculateProgress();
+  // 运行代码 - 使用 useCallback 稳定引用
+  const handleRunCode = useCallback(() => {
+    runCode(code);
+  }, [code, runCode]);
+
+  // 代码变更 - 使用 useCallback 稳定引用
+  const handleCodeChange = useCallback((newCode: string) => {
+    setCode(newCode);
+  }, []);
+
+  // 光标位置变更 - 使用 useCallback 稳定引用
+  const handleCursorChange = useCallback((position: { line: number; column: number }) => {
+    setCursorPosition(position);
+  }, []);
+
+  // 计算当前进度 - 使用 useMemo 缓存计算结果
+  const progress = useMemo(() => calculateProgress(), []);
 
   return (
     <>
@@ -163,13 +178,13 @@ export function LearnPage() {
               <Panel defaultSize={50} minSize={380} style={{ height: '100%', overflow: 'auto' }}>
                 <CodeEditorPanel
                   code={code}
-                  onCodeChange={setCode}
+                  onCodeChange={handleCodeChange}
                   cursorPosition={cursorPosition}
-                  onCursorChange={setCursorPosition}
+                  onCursorChange={handleCursorChange}
                   currentLesson={currentLesson}
                   theme={theme}
                   isRunning={isRunning}
-                  onRun={() => runCode(code)}
+                  onRun={handleRunCode}
                   onStop={stopExecution}
                   onReset={handleReset}
                 />

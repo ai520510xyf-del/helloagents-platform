@@ -1,0 +1,203 @@
+E2E Testing Project Structure
+==============================
+
+frontend/
+│
+├── 📁 e2e/                                    # E2E 测试目录
+│   ├── 📁 fixtures/                           # 测试数据
+│   │   └── 📄 test-data.ts                   # 测试常量和固定装置
+│   │       ├── TEST_DATA                      # 代码示例、AI问题、超时配置
+│   │       ├── ERROR_SCENARIOS                # 错误场景定义
+│   │       └── EXPECTED_RESULTS               # 期望结果定义
+│   │
+│   ├── 📁 utils/                              # 测试工具
+│   │   └── 📄 test-helpers.ts                # Helper 类集合
+│   │       ├── PageHelpers                    # 页面导航和通用操作
+│   │       ├── CodeEditorHelpers             # Monaco Editor 操作
+│   │       ├── CodeExecutionHelpers          # 代码执行和终端操作
+│   │       ├── AIAssistantHelpers            # AI 助手交互
+│   │       ├── CourseNavigationHelpers       # 课程导航
+│   │       ├── ToastHelpers                  # Toast 通知验证
+│   │       └── APIMockHelpers                # API Mock 和错误模拟
+│   │
+│   ├── 📄 code-execution.e2e.ts              # 代码执行流程测试
+│   │   ├── should execute simple Python code successfully
+│   │   ├── should execute code with loop and show multiple outputs
+│   │   ├── should handle code execution with errors
+│   │   ├── should clear terminal output
+│   │   ├── should stop long-running code execution
+│   │   ├── should preserve code when switching between tabs
+│   │   ├── should show execution time after running code
+│   │   ├── should handle multiple consecutive executions
+│   │   ├── should display line numbers and cursor position
+│   │   └── [10 tests total]
+│   │
+│   ├── 📄 ai-assistant.e2e.ts                # AI 助手交互测试
+│   │   ├── should open AI assistant panel
+│   │   ├── should send message and receive AI response
+│   │   ├── should display loading indicator while waiting for response
+│   │   ├── should preserve chat history
+│   │   ├── should handle code-related questions
+│   │   ├── should display user and AI messages with different styles
+│   │   ├── should handle empty message input
+│   │   ├── should scroll to bottom when new messages arrive
+│   │   ├── should handle AI API errors gracefully
+│   │   ├── should support markdown rendering in AI responses
+│   │   ├── should display timestamps for messages
+│   │   ├── should handle long AI responses
+│   │   └── [12 tests total]
+│   │
+│   ├── 📄 course-navigation.e2e.ts           # 课程导航测试
+│   │   ├── should display course menu on page load
+│   │   ├── should load default course content on page load
+│   │   ├── should switch between different courses
+│   │   ├── should load course-specific code template
+│   │   ├── should highlight active course in menu
+│   │   ├── should preserve code when switching courses and returning
+│   │   ├── should display course progress indicator
+│   │   ├── should show course description in content panel
+│   │   ├── should support keyboard navigation in course menu
+│   │   ├── should display course categories or sections
+│   │   ├── should handle rapid course switching
+│   │   ├── should display course completion status
+│   │   ├── should scroll course menu when many courses exist
+│   │   ├── should show course prerequisites or difficulty level
+│   │   ├── should load course content incrementally without blocking UI
+│   │   └── [15 tests total]
+│   │
+│   ├── 📄 error-handling.e2e.ts              # 错误处理测试
+│   │   ├── should display toast notification on API error
+│   │   ├── should handle network errors gracefully
+│   │   ├── should display syntax error in terminal output
+│   │   ├── should display runtime error in terminal output
+│   │   ├── should log errors to console
+│   │   ├── should allow retry after API error
+│   │   ├── should handle AI assistant API errors
+│   │   ├── should handle timeout errors
+│   │   ├── should recover from JavaScript errors without page crash
+│   │   ├── should display user-friendly error messages
+│   │   ├── should handle missing or malformed API responses
+│   │   ├── should handle concurrent API requests correctly
+│   │   ├── should display error boundary fallback on component crash
+│   │   ├── should preserve user data after error recovery
+│   │   ├── should handle localStorage errors gracefully
+│   │   └── [15 tests total]
+│   │
+│   └── 📄 README.md                          # 详细技术文档
+│       ├── 目录结构说明
+│       ├── 测试场景详解
+│       ├── 工具类 API 文档
+│       ├── 最佳实践
+│       ├── 调试技巧
+│       ├── 故障排查
+│       └── 扩展指南
+│
+├── 📁 scripts/                                # 脚本目录
+│   └── 📄 run-e2e-tests.sh                   # 测试执行脚本（可执行）
+│       ├── 依赖检查
+│       ├── 清理旧报告
+│       ├── 运行测试
+│       ├── 生成报告
+│       └── 显示统计
+│
+├── 📁 .github/workflows/                      # CI/CD 配置
+│   └── 📄 e2e-tests.yml                      # GitHub Actions 工作流
+│       ├── 多浏览器矩阵
+│       ├── 自动依赖安装
+│       ├── 测试报告上传
+│       └── 失败截图/视频
+│
+├── 📄 playwright.config.ts                    # Playwright 配置
+│   ├── 测试目录和匹配模式
+│   ├── 超时设置
+│   ├── 报告器配置
+│   ├── 多浏览器配置
+│   └── 开发服务器配置
+│
+├── 📄 package.json                            # NPM 配置
+│   └── scripts:
+│       ├── test:e2e                          # 运行所有测试
+│       ├── test:e2e:ui                       # UI 模式
+│       ├── test:e2e:headed                   # Headed 模式
+│       ├── test:e2e:debug                    # Debug 模式
+│       ├── test:e2e:chromium                 # 只运行 Chromium
+│       ├── test:e2e:firefox                  # 只运行 Firefox
+│       └── test:e2e:report                   # 查看报告
+│
+├── 📄 E2E_TESTING_GUIDE.md                   # 快速开始指南
+│   ├── 快速开始
+│   ├── 测试场景概览
+│   ├── 开发建议
+│   ├── 调试技巧
+│   ├── 常见问题
+│   └── 性能指标
+│
+├── 📄 TEST_SUMMARY.md                         # 实施总结
+│   ├── 任务完成情况
+│   ├── 技术栈
+│   ├── 测试覆盖范围
+│   ├── 项目结构
+│   ├── 关键成果
+│   └── 后续改进建议
+│
+├── 📄 E2E_QUICK_REFERENCE.md                 # 快速参考卡片
+│   ├── 快速命令
+│   ├── Helper 类 API
+│   ├── 测试模板
+│   ├── 调试技巧
+│   ├── 常见问题
+│   └── 最佳实践
+│
+├── 📄 E2E_PROJECT_FILES.txt                  # 项目文件清单
+└── 📄 E2E_PROJECT_TREE.txt                   # 本文件（项目树形结构）
+
+测试运行时生成的目录（已添加到 .gitignore）
+──────────────────────────────────────────
+📁 playwright-report/                         # 测试报告目录
+├── 📄 index.html                             # HTML 测试报告
+├── 📄 results.json                           # JSON 格式结果
+├── 📄 results.xml                            # JUnit XML 格式
+├── 📁 screenshots/                           # 失败截图
+└── 📁 trace/                                 # Trace 文件
+
+📁 test-results/                              # 测试结果目录
+└── 📁 [test-name]/                          # 单个测试结果
+    ├── video.webm                           # 失败视频
+    └── trace.zip                            # Trace 文件
+
+统计信息
+────────
+📊 总文件数: 17
+📊 测试文件: 4
+📊 测试用例: 52
+📊 Helper 类: 7
+📊 Helper 方法: 50+
+📊 文档页面: 4
+📊 浏览器: 2 (Chromium, Firefox)
+📊 总执行数: 104 (52 tests × 2 browsers)
+
+测试场景分布
+────────────
+🧪 代码执行流程: 10 tests (19%)
+🤖 AI 助手交互: 12 tests (23%)
+🧭 课程导航: 15 tests (29%)
+❌ 错误处理: 15 tests (29%)
+
+运行命令
+────────
+npm run test:e2e              # 运行所有测试
+npm run test:e2e:ui          # UI 模式（推荐开发使用）
+npm run test:e2e:headed      # 查看浏览器运行
+npm run test:e2e:debug       # 调试模式
+./scripts/run-e2e-tests.sh   # 使用 Bash 脚本
+
+查看文档
+────────
+📖 快速开始: E2E_TESTING_GUIDE.md
+📖 详细文档: e2e/README.md
+📖 实施总结: TEST_SUMMARY.md
+📖 快速参考: E2E_QUICK_REFERENCE.md
+
+状态: ✅ 已完成并可用
+日期: 2026-01-08
+工程师: Test Automation Engineer

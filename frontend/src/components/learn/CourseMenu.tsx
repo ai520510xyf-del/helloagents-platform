@@ -1,8 +1,13 @@
 /**
  * CourseMenu 组件
  * 左侧课程目录
+ *
+ * 性能优化：
+ * - 使用 React.memo 避免不必要的重渲染
+ * - 仅在 currentLesson.id 或 theme 变化时更新
  */
 
+import { memo } from 'react';
 import { BookOpen } from 'lucide-react';
 import { allChapters, type Lesson } from '../../data/courses';
 
@@ -22,7 +27,7 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-export function CourseMenu({ currentLesson, theme, onLessonChange }: CourseMenuProps) {
+export const CourseMenu = memo(function CourseMenu({ currentLesson, theme, onLessonChange }: CourseMenuProps) {
   return (
     <div className={`h-full overflow-y-auto border-r custom-scrollbar ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
       <div className="p-4">
@@ -62,4 +67,10 @@ export function CourseMenu({ currentLesson, theme, onLessonChange }: CourseMenuP
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // 仅在当前课程或主题变化时重新渲染
+  return (
+    prevProps.currentLesson.id === nextProps.currentLesson.id &&
+    prevProps.theme === nextProps.theme
+  );
+});

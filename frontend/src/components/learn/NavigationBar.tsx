@@ -1,8 +1,13 @@
 /**
  * NavigationBar 组件
  * 顶部导航栏，包含标题、进度条和主题切换
+ *
+ * 性能优化：
+ * - 使用 React.memo 避免不必要的重渲染
+ * - 仅在 progress、theme 或 currentLesson.id 变化时更新
  */
 
+import { memo } from 'react';
 import { Code, Sun, Moon } from 'lucide-react';
 import { type Lesson } from '../../data/courses';
 
@@ -13,7 +18,7 @@ interface NavigationBarProps {
   onToggleTheme: () => void;
 }
 
-export function NavigationBar({ currentLesson, progress, theme, onToggleTheme }: NavigationBarProps) {
+export const NavigationBar = memo(function NavigationBar({ currentLesson, progress, theme, onToggleTheme }: NavigationBarProps) {
   return (
     <header className={`h-14 border-b flex items-center justify-between px-6 flex-shrink-0 ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
       <div className="flex items-center gap-4">
@@ -66,4 +71,13 @@ export function NavigationBar({ currentLesson, progress, theme, onToggleTheme }:
       </div>
     </header>
   );
-}
+}, (prevProps, nextProps) => {
+  // 自定义比较函数：仅在关键属性变化时重新渲染
+  return (
+    prevProps.progress === nextProps.progress &&
+    prevProps.theme === nextProps.theme &&
+    prevProps.currentLesson.id === nextProps.currentLesson.id &&
+    prevProps.currentLesson.chapter === nextProps.currentLesson.chapter &&
+    prevProps.currentLesson.title === nextProps.currentLesson.title
+  );
+});

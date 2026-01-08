@@ -1,8 +1,13 @@
 /**
  * CodeEditorPanel 组件
  * 中间代码编辑器面板，包含文件标签栏、编辑器和操作栏
+ *
+ * 性能优化：
+ * - 使用 React.memo 避免不必要的重渲染
+ * - 仅在关键属性变化时更新
  */
 
+import { memo } from 'react';
 import { Play, StopCircle, RotateCcw } from 'lucide-react';
 import { CodeEditor } from '../CodeEditor';
 import { Button } from '../ui/Button';
@@ -21,7 +26,7 @@ interface CodeEditorPanelProps {
   onReset: () => void;
 }
 
-export function CodeEditorPanel({
+export const CodeEditorPanel = memo(function CodeEditorPanel({
   code,
   onCodeChange,
   cursorPosition,
@@ -93,4 +98,14 @@ export function CodeEditorPanel({
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // 仅在关键属性变化时重新渲染
+  return (
+    prevProps.code === nextProps.code &&
+    prevProps.theme === nextProps.theme &&
+    prevProps.isRunning === nextProps.isRunning &&
+    prevProps.currentLesson.id === nextProps.currentLesson.id &&
+    prevProps.cursorPosition.line === nextProps.cursorPosition.line &&
+    prevProps.cursorPosition.column === nextProps.cursorPosition.column
+  );
+});
