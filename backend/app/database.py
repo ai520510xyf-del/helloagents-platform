@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.pool import StaticPool
 from .logger import get_logger
 
 logger = get_logger(__name__)
@@ -15,40 +16,81 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DATABASE_PATH = BASE_DIR / 'helloagents.db'
 DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
 
-# SQLAlchemy 引擎配置
+# 环境配置
+DEBUG_MODE = os.environ.get('DEBUG', 'false').lower() == 'true'
+LOG_SQL_QUERIES = os.environ.get('LOG_SQL_QUERIES', 'false').lower() == 'true'
+
+# SQLAlchemy 引擎配置（SQLite 优化）
 engine = create_engine(
     DATABASE_URL,
     connect_args={
         'check_same_thread': False,  # SQLite 多线程支持
-        'timeout': 10,  # 锁超时时间（秒）
+        'timeout': 30,  # 锁超时时间（秒），提高并发性能
     },
-    echo=False,  # 生产环境设为 False，开发时可设为 True 查看 SQL
+    # SQLite 使用 StaticPool 提升性能（单文件数据库）
+    poolclass=StaticPool,
+    # 查询日志（开发环境开启）
+    echo=LOG_SQL_QUERIES,
+    # 连接回收时间（小时）
+    pool_recycle=3600,
+    # 连接前 ping 检查（确保连接有效）
+    pool_pre_ping=True,
 )
 
 
-# 启用 SQLite 外键约束和优化
+# 启用 SQLite 外键约束和性能优化
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_conn, connection_record):
     """
     连接时执行 SQLite PRAGMA 优化
+
+    性能优化说明：
+    - WAL 模式: 提升并发读写性能
+    - NORMAL 同步: 平衡性能和安全性
+    - 大缓存: 减少磁盘 I/O
+    - 内存临时存储: 加速临时表操作
+    - mmap_size: 使用内存映射提升读性能
     """
     cursor = dbapi_conn.cursor()
-    # 启用外键约束
+
+    # 1. 启用外键约束（数据完整性）
     cursor.execute("PRAGMA foreign_keys = ON")
-    # 启用 WAL 模式（Write-Ahead Logging）
+
+    # 2. 启用 WAL 模式（Write-Ahead Logging）
+    # 优点: 读写并发，写入不阻塞读取
     cursor.execute("PRAGMA journal_mode = WAL")
-    # 优化同步模式
+
+    # 3. 优化同步模式（NORMAL 平衡性能和安全）
+    # FULL: 最安全但最慢
+    # NORMAL: 平衡选择（推荐）
+    # OFF: 最快但有数据丢失风险
     cursor.execute("PRAGMA synchronous = NORMAL")
-    # 设置缓存大小（64MB）
-    cursor.execute("PRAGMA cache_size = -64000")
-    # 临时文件存储在内存中
+
+    # 4. 设置缓存大小（128MB）
+    # 负数表示 KB，-128000 = 128MB
+    cursor.execute("PRAGMA cache_size = -128000")
+
+    # 5. 临时文件存储在内存中（加速临时表和排序）
     cursor.execute("PRAGMA temp_store = MEMORY")
+
+    # 6. 内存映射 I/O（提升读性能）
+    # 256MB 内存映射
+    cursor.execute("PRAGMA mmap_size = 268435456")
+
+    # 7. 优化查询规划器（启用查询分析）
+    cursor.execute("PRAGMA analysis_limit = 1000")
+
+    # 8. 自动 VACUUM 模式（渐进式清理，防止文件膨胀）
+    cursor.execute("PRAGMA auto_vacuum = INCREMENTAL")
+
     cursor.close()
 
     logger.debug(
         "database_connection_established",
         database_path=str(DATABASE_PATH),
-        optimizations_applied=True
+        optimizations_applied=True,
+        cache_size_mb=128,
+        mmap_size_mb=256
     )
 
 
