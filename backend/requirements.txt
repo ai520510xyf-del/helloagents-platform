@@ -1,0 +1,16 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-dotenv==1.0.0
+pydantic==2.10.5
+pydantic-settings==2.7.1
+websockets==14.1
+python-multipart==0.0.20
+docker==7.1.0
+anthropic==0.43.0
+sqlalchemy==2.0.36
+openai==1.59.5
+
+# 测试依赖
+pytest==8.3.4
+pytest-cov==6.0.0
+httpx==0.28.1

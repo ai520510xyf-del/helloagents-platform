@@ -1,0 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  :root {
+    --font-code: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+
+    --transition-fast: 150ms;
+    --transition-base: 200ms;
+    --transition-slow: 300ms;
+  }
+
+  body {
+    @apply bg-bg-dark text-text-primary font-sans;
+    @apply m-0 min-h-screen;
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code, pre {
+    font-family: var(--font-code);
+  }
+
+  /* 无障碍: 尊重 prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* 全局 focus-visible 样式 */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-bg-dark rounded;
+  }
+}
+
+@layer components {
+  /* Scrollbar 样式 */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* 默认使用深色主题滚动条 */
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background-color: #1e293b;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #334155;
+    border-radius: 9999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #475569;
+  }
+
+  /* 亮色主题滚动条 - 使用更高优先级的选择器 */
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-track {
+    background-color: #f1f5f9 !important;
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1 !important;
+    border-radius: 9999px;
+  }
+
+  html:not(.dark) .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8 !important;
+  }
+}
