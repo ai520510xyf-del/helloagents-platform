@@ -3,8 +3,10 @@ HelloAgents 学习平台 - 后端 API 服务
 基于 FastAPI 构建，提供代码执行和 AI 助手功能
 """
 
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -12,6 +14,7 @@ import json
 import asyncio
 from datetime import datetime
 import os
+import time
 from dotenv import load_dotenv
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -59,11 +62,18 @@ from openai import OpenAI
 # 导入路由
 from app.routers import users, progress, submissions, chat, migrate
 
+# 导入 API 版本模块
+from app.api.v1 import api_router as api_v1_router
+from app.api.version import router as version_router
+
 # 创建 FastAPI 应用
 app = FastAPI(
     title="HelloAgents Learning Platform API",
     description="AI Agent 互动学习平台后端服务",
-    version="1.0.0"
+    version="1.0.0",
+    openapi_url="/api/v1/openapi.json",
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc"
 )
 
 # 初始化 DeepSeek 客户端（使用 OpenAI SDK）
@@ -72,13 +82,22 @@ deepseek_client = OpenAI(
     base_url="https://api.deepseek.com/v1"  # 需要添加 /v1 后缀
 )
 
-# 添加日志中间件
+# 添加中间件 (顺序很重要 - 后添加的先执行)
 from app.middleware.logging_middleware import (
     LoggingMiddleware,
     PerformanceMonitoringMiddleware,
     ErrorLoggingMiddleware
 )
+from app.middleware.error_handler import ErrorHandlerMiddleware
+from app.middleware.version_middleware import APIVersionMiddleware
 
+# 错误处理中间件 (最先添加，最后执行，确保能捕获所有错误)
+app.add_middleware(ErrorHandlerMiddleware)
+
+# 版本控制中间件
+app.add_middleware(APIVersionMiddleware, default_version="v1")
+
+# 日志中间件
 app.add_middleware(ErrorLoggingMiddleware)
 app.add_middleware(PerformanceMonitoringMiddleware, slow_request_threshold_ms=1000.0)
 app.add_middleware(LoggingMiddleware)
@@ -92,12 +111,133 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 注册路由
+# 导入异常处理器
+from app.exceptions import HelloAgentsException
+
+# 注册版本化路由
+app.include_router(api_v1_router, prefix="/api/v1")
+
+# 注册版本信息路由
+app.include_router(version_router)
+
+# 注册现有路由（保持向后兼容）
 app.include_router(users.router)
 app.include_router(progress.router)
 app.include_router(submissions.router)
 app.include_router(chat.router)
 app.include_router(migrate.router)
+
+# ============================================
+# 异常处理器
+# ============================================
+
+@app.exception_handler(HelloAgentsException)
+async def helloagents_exception_handler(request: Request, exc: HelloAgentsException):
+    """
+    处理 HelloAgents 自定义异常
+
+    返回统一格式的错误响应
+    """
+    # 根据状态码决定日志级别
+    if exc.status_code >= 500:
+        logger.error(
+            "helloagents_exception",
+            error_code=exc.code,
+            message=exc.message,
+            status_code=exc.status_code,
+            path=str(request.url),
+            method=request.method,
+            details=exc.details
+        )
+    else:
+        logger.warning(
+            "helloagents_exception",
+            error_code=exc.code,
+            message=exc.message,
+            status_code=exc.status_code,
+            path=str(request.url),
+            method=request.method,
+            details=exc.details
+        )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "path": str(request.url),
+                "timestamp": time.time(),
+                **({"details": exc.details} if exc.details else {})
+            }
+        }
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """
+    处理 FastAPI HTTPException
+
+    返回统一格式的错误响应
+    """
+    logger.warning(
+        "http_exception",
+        status_code=exc.status_code,
+        detail=exc.detail,
+        path=str(request.url),
+        method=request.method
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "error": {
+                "code": f"HTTP_{exc.status_code}",
+                "message": exc.detail,
+                "path": str(request.url),
+                "timestamp": time.time()
+            }
+        }
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """
+    处理请求验证错误
+
+    返回详细的验证错误信息
+    """
+    errors = []
+    for error in exc.errors():
+        errors.append({
+            "field": ".".join(str(loc) for loc in error["loc"]),
+            "message": error["msg"],
+            "type": error["type"]
+        })
+
+    logger.warning(
+        "validation_error",
+        path=str(request.url),
+        method=request.method,
+        errors=errors
+    )
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "VALIDATION_ERROR",
+                "message": "Request validation failed",
+                "path": str(request.url),
+                "timestamp": time.time(),
+                "details": {
+                    "validation_errors": errors
+                }
+            }
+        }
+    )
 
 # ============================================
 # 数据模型
@@ -180,6 +320,40 @@ async def health_check():
         "timestamp": datetime.now().isoformat()
     }
 
+# ============================================
+# 向后兼容端点（重定向到 v1）
+# ============================================
+# 这些端点保持向后兼容，实际调用 v1 版本的实现
+
+@app.get("/api/sandbox/pool/stats")
+async def get_pool_stats():
+    """
+    获取容器池统计信息
+
+    **已弃用**: 请使用 `/api/v1/sandbox/pool/stats`
+
+    返回容器池的当前状态、性能指标和容器详情
+    """
+    if sandbox.pool is None:
+        return {
+            "pool_enabled": False,
+            "message": "Container pool is not enabled",
+            "timestamp": datetime.now().isoformat()
+        }
+
+    stats = sandbox.pool.get_stats()
+    stats["pool_enabled"] = True
+    stats["timestamp"] = datetime.now().isoformat()
+
+    logger.info(
+        "pool_stats_requested",
+        available_containers=stats.get('available_containers', 0),
+        in_use_containers=stats.get('in_use_containers', 0),
+        total_executions=stats.get('total_executions', 0)
+    )
+
+    return stats
+
 @app.post("/api/execute", response_model=CodeExecutionResponse)
 async def execute_code(
     request: CodeExecutionRequest,
@@ -189,6 +363,8 @@ async def execute_code(
 ):
     """
     执行用户代码
+
+    **已弃用**: 请使用 `/api/v1/code/execute`
 
     使用 Docker 容器作为安全沙箱环境执行代码
     可选：保存代码提交记录到数据库
@@ -255,6 +431,8 @@ async def get_all_lessons():
     """
     获取所有课程列表
 
+    **已弃用**: 请使用 `/api/v1/lessons`
+
     返回课程目录结构
     """
     try:
@@ -270,6 +448,8 @@ async def get_all_lessons():
 async def get_lesson_content(lesson_id: str):
     """
     获取指定课程的完整内容
+
+    **已弃用**: 请使用 `/api/v1/lessons/{lesson_id}`
 
     Args:
         lesson_id: 课程ID，如 "1", "2", "4.1"
@@ -310,6 +490,8 @@ async def chat_with_ai(
 ):
     """
     与 AI 学习助手聊天
+
+    **已弃用**: 请使用 `/api/v1/chat`
 
     提供课程学习过程中的问答支持
     可选：保存聊天消息到数据库
@@ -447,6 +629,8 @@ async def get_ai_hint(request: AIHintRequest):
     """
     获取 AI 智能提示
 
+    **已弃用**: 请使用 `/api/v1/code/hint`
+
     根据当前代码和光标位置，提供实时的编程提示
     """
     try:
@@ -548,3 +732,13 @@ async def startup_event():
 async def shutdown_event():
     """应用关闭时执行"""
     print("👋 HelloAgents Learning Platform API 正在关闭...")
+
+    # 优雅关闭容器池
+    if sandbox.pool:
+        logger.info("shutting_down_container_pool")
+        print("🔄 正在关闭容器池...")
+        sandbox.cleanup()
+        print("✅ 容器池已关闭")
+
+    logger.info("application_shutdown_completed")
+    print("✅ 应用已完全关闭")
