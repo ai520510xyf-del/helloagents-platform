@@ -135,7 +135,7 @@ app.add_middleware(
 )
 
 # 导入异常处理器
-from app.exceptions import HelloAgentsException
+from app.exceptions import HelloAgentsException, ValidationError
 
 # 注册版本化路由
 app.include_router(api_v1_router, prefix="/api/v1")
@@ -441,13 +441,15 @@ async def execute_code(
                 execution_time=execution_time
             )
 
+    except ValidationError as e:
+        # 代码安全检查失败 - 抛出ValidationError让中间件处理
+        raise e
+    except HelloAgentsException:
+        # 其他HelloAgents异常 - 让中间件处理
+        raise
     except Exception as e:
-        return CodeExecutionResponse(
-            success=False,
-            output="",
-            error=str(e),
-            execution_time=0.0
-        )
+        # 未预期的异常 - 让中间件处理（转换为500错误）
+        raise e
 
 @app.get("/api/lessons")
 async def get_all_lessons():

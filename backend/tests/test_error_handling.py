@@ -306,7 +306,7 @@ def test_api_code_safety_check_error(client):
 # 错误中间件测试
 # ============================================
 
-@patch('app.sandbox.sandbox.execute_python')
+@patch('app.main.sandbox.execute_python')
 def test_middleware_catches_helloagents_exception(mock_execute, client):
     """测试中间件捕获 HelloAgents 异常"""
     # 模拟沙箱抛出异常
@@ -331,7 +331,7 @@ def test_middleware_catches_helloagents_exception(mock_execute, client):
     assert "Container execution failed" in data["error"]["message"]
 
 
-@patch('app.sandbox.sandbox.execute_python')
+@patch('app.main.sandbox.execute_python')
 def test_middleware_catches_unexpected_exception(mock_execute, client):
     """测试中间件捕获未预期异常"""
     # 模拟未预期的异常

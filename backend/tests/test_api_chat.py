@@ -42,7 +42,9 @@ def test_create_message_invalid_role(client, sample_user):
     )
 
     assert response.status_code == 400
-    assert "Invalid role" in response.json()["detail"]
+    data = response.json()
+    assert "error" in data
+    assert "Invalid role" in data["error"]["message"]
 
 
 def test_create_message_without_lesson(client, sample_user):
