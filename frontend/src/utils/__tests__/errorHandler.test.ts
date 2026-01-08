@@ -2,18 +2,19 @@
  * Toast 去重和性能测试
  */
 
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ToastManager } from '../errorHandler';
 
 describe('ToastManager', () => {
   beforeEach(() => {
     // 清理 Toast 队列
     ToastManager.clear();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   describe('Toast 去重功能', () => {
     it('应该对相同消息去重', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       // 快速显示 3 个相同 Toast
       ToastManager.showToast('测试错误', 'error');
@@ -25,11 +26,11 @@ describe('ToastManager', () => {
       expect(stats.queueSize).toBe(1); // 只有 1 个唯一 Toast
       expect(stats.totalPending).toBe(3); // 但计数为 3
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('应该对不同类型的消息分别处理', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       ToastManager.showToast('测试消息', 'error');
       ToastManager.showToast('测试消息', 'warning');
@@ -39,11 +40,11 @@ describe('ToastManager', () => {
       expect(stats.queueSize).toBe(3); // 3 个不同类型
       expect(stats.totalPending).toBe(3);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
-    it('应该在去重窗口外创建新 Toast', (done) => {
-      jest.useFakeTimers();
+    it('应该在去重窗口外创建新 Toast', () => {
+      vi.useFakeTimers();
 
       ToastManager.showToast('测试错误', 'error');
 
@@ -54,18 +55,16 @@ describe('ToastManager', () => {
         const stats = ToastManager.getStats();
         // 由于第一个已经刷新,应该只有 1 个
         expect(stats.queueSize).toBeLessThanOrEqual(1);
-
-        jest.useRealTimers();
-        done();
       }, 3500);
 
-      jest.advanceTimersByTime(3500);
+      vi.advanceTimersByTime(3500);
+      vi.useRealTimers();
     });
   });
 
   describe('批处理功能', () => {
     it('应该正确批处理多个相同错误', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       // 显示 5 个相同 Toast
       for (let i = 0; i < 5; i++) {
@@ -75,11 +74,11 @@ describe('ToastManager', () => {
       const stats = ToastManager.getStats();
       expect(stats.totalPending).toBe(5);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('应该处理大量相同错误', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       // 显示 20 个相同 Toast
       for (let i = 0; i < 20; i++) {
@@ -90,7 +89,7 @@ describe('ToastManager', () => {
       expect(stats.queueSize).toBe(1); // 只有 1 个唯一 Toast
       expect(stats.totalPending).toBe(20); // 计数为 20
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 
@@ -112,7 +111,7 @@ describe('ToastManager', () => {
     });
 
     it('去重应该提升性能', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       // 测试 1: 100 个不同消息
       const start1 = performance.now();
@@ -135,13 +134,13 @@ describe('ToastManager', () => {
       // 去重应该更快或相近
       expect(time2).toBeLessThanOrEqual(time1 * 1.2);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 
   describe('队列管理', () => {
     it('clear() 应该清空所有待处理 Toast', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       // 添加多个 Toast
       for (let i = 0; i < 10; i++) {
@@ -158,11 +157,11 @@ describe('ToastManager', () => {
       expect(stats.queueSize).toBe(0);
       expect(stats.totalPending).toBe(0);
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('getStats() 应该返回正确的统计信息', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       ToastManager.showToast('错误 1', 'error');
       ToastManager.showToast('错误 1', 'error');
@@ -172,23 +171,23 @@ describe('ToastManager', () => {
       expect(stats.queueSize).toBe(2); // 2 个唯一 Toast
       expect(stats.totalPending).toBe(3); // 总共 3 次
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 
   describe('边界情况', () => {
     it('应该处理空消息', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       expect(() => {
         ToastManager.showToast('', 'error');
       }).not.toThrow();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('应该处理长消息', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       const longMessage = 'A'.repeat(1000);
 
@@ -196,11 +195,11 @@ describe('ToastManager', () => {
         ToastManager.showToast(longMessage, 'error');
       }).not.toThrow();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('应该处理特殊字符', () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       const specialMessage = '特殊字符: <>{}[]()@#$%^&*';
 
@@ -208,7 +207,7 @@ describe('ToastManager', () => {
         ToastManager.showToast(specialMessage, 'error');
       }).not.toThrow();
 
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
   });
 });
