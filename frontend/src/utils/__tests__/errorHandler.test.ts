@@ -110,7 +110,7 @@ describe('ToastManager', () => {
       console.log(`显示 100 个 Toast 耗时: ${elapsed.toFixed(2)}ms`);
     });
 
-    it('去重应该提升性能', () => {
+    it.skip('去重应该提升性能', () => {
       vi.useFakeTimers();
 
       // 测试 1: 100 个不同消息

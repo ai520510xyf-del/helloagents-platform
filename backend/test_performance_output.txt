@@ -1,0 +1,495 @@
+[2m2026-01-08T09:01:20.372244Z[0m [[32m[1minfo     [0m] [1mlogging_system_initialized    [0m [[0m[1m[34mapp.logger[0m][0m [36mapp[0m=[35mhelloagents[0m [36mbackup_count[0m=[35m5[0m [36menvironment[0m=[35mdevelopment[0m [36mfilename[0m=[35mlogger.py[0m [36mfunc_name[0m=[35m<module>[0m [36mlineno[0m=[35m287[0m [36mlog_file[0m=[35m/Users/anker/Desktop/work/mydocuments/project/agent-study/helloagents-platform/backend/logs/helloagents.log[0m [36mlog_level[0m=[35mINFO[0m [36mmax_log_size_mb[0m=[35m10.0[0m
+[2m2026-01-08T09:01:22.042610Z[0m [[33m[1mwarning  [0m] [1mdocker_unavailable            [0m [[0m[1m[34mapp.sandbox[0m][0m [36mapp[0m=[35mhelloagents[0m [36menvironment[0m=[35mdevelopment[0m [36merror[0m=[35mError while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m [36mfallback[0m=[35mlocal_execution[0m [36mfilename[0m=[35msandbox.py[0m [36mfunc_name[0m=[35m__init__[0m [36mlineno[0m=[35m78[0m
+/Users/anker/Desktop/work/mydocuments/project/agent-study/helloagents-platform/backend/venv/lib/python3.13/site-packages/pytest_asyncio/plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+[1m============================= test session starts ==============================[0m
+platform darwin -- Python 3.13.9, pytest-8.3.4, pluggy-1.6.0 -- /Users/anker/Desktop/work/mydocuments/project/agent-study/helloagents-platform/backend/venv/bin/python3.13
+cachedir: .pytest_cache
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /Users/anker/Desktop/work/mydocuments/project/agent-study/helloagents-platform/backend
+configfile: pytest.ini
+plugins: anyio-4.12.1, cov-6.0.0, asyncio-0.25.2, benchmark-5.1.0, Faker-34.0.0
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None
+[1mcollecting ... [0mcollected 7 items
+
+tests/test_performance.py::TestContainerPoolPerformance::test_quick_health_check_performance [31mERROR[0m
+tests/test_performance.py::TestContainerPoolPerformance::test_deep_health_check_performance [31mERROR[0m
+tests/test_performance.py::TestContainerPoolPerformance::test_container_reset_performance [31mERROR[0m
+tests/test_performance.py::TestContainerPoolPerformance::test_container_acquisition_performance [31mERROR[0m
+tests/test_performance.py::TestContainerPoolPerformance::test_container_return_performance [31mERROR[0m
+tests/test_performance.py::TestContainerPoolPerformance::test_concurrent_container_operations [31mERROR[0m
+tests/test_performance.py::test_performance_comparison 
+============================================================
+性能优化对比
+============================================================
+
+优化目标:
+- 快速健康检查: < 100ms (优化前: 200-500ms)
+- 容器重置: < 300ms (优化前: 300-500ms)
+- 容器获取: < 150ms (包含快速健康检查)
+
+运行性能测试以验证优化效果...
+使用 pytest 运行: pytest backend/tests/test_performance.py -v -s
+[32mPASSED[0m
+
+==================================== ERRORS ====================================
+[31m[1m_ ERROR at setup of TestContainerPoolPerformance.test_quick_health_check_performance _[0m
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:644: in send
+    resp = conn.urlopen(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:841: in urlopen
+    retries = retries.increment(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/retry.py[0m:490: in increment
+    raise reraise(type(error), error, _stacktrace)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/util.py[0m:38: in reraise
+    raise value.with_traceback(tb)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   urllib3.exceptions.ProtocolError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:223: in _retrieve_server_version
+    return self.version(api_version=False)["ApiVersion"]
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/daemon.py[0m:181: in version
+    return self._result(self._get(url), json=True)
+[1m[31mvenv/lib/python3.13/site-packages/docker/utils/decorators.py[0m:44: in inner
+    return f(self, *args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:246: in _get
+    return self.get(url, **self._set_request_timeout(kwargs))
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:602: in get
+    return self.request("GET", url, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:589: in request
+    resp = self.send(prep, **send_kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:703: in send
+    r = adapter.send(request, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:659: in send
+    raise ConnectionError(err, request=request)
+[1m[31mE   requests.exceptions.ConnectionError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_performance.py[0m:18: in pool
+    pool = ContainerPool(
+[1m[31mapp/container_pool.py[0m:98: in __init__
+    self.client = docker.from_env()
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:94: in from_env
+    return cls(
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:45: in __init__
+    self.api = APIClient(*args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:207: in __init__
+    self._version = self._retrieve_server_version()
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:230: in _retrieve_server_version
+    raise DockerException(
+[1m[31mE   docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+[31m[1m_ ERROR at setup of TestContainerPoolPerformance.test_deep_health_check_performance _[0m
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:644: in send
+    resp = conn.urlopen(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:841: in urlopen
+    retries = retries.increment(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/retry.py[0m:490: in increment
+    raise reraise(type(error), error, _stacktrace)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/util.py[0m:38: in reraise
+    raise value.with_traceback(tb)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   urllib3.exceptions.ProtocolError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:223: in _retrieve_server_version
+    return self.version(api_version=False)["ApiVersion"]
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/daemon.py[0m:181: in version
+    return self._result(self._get(url), json=True)
+[1m[31mvenv/lib/python3.13/site-packages/docker/utils/decorators.py[0m:44: in inner
+    return f(self, *args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:246: in _get
+    return self.get(url, **self._set_request_timeout(kwargs))
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:602: in get
+    return self.request("GET", url, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:589: in request
+    resp = self.send(prep, **send_kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:703: in send
+    r = adapter.send(request, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:659: in send
+    raise ConnectionError(err, request=request)
+[1m[31mE   requests.exceptions.ConnectionError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_performance.py[0m:18: in pool
+    pool = ContainerPool(
+[1m[31mapp/container_pool.py[0m:98: in __init__
+    self.client = docker.from_env()
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:94: in from_env
+    return cls(
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:45: in __init__
+    self.api = APIClient(*args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:207: in __init__
+    self._version = self._retrieve_server_version()
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:230: in _retrieve_server_version
+    raise DockerException(
+[1m[31mE   docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+[31m[1m_ ERROR at setup of TestContainerPoolPerformance.test_container_reset_performance _[0m
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:644: in send
+    resp = conn.urlopen(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:841: in urlopen
+    retries = retries.increment(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/retry.py[0m:490: in increment
+    raise reraise(type(error), error, _stacktrace)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/util.py[0m:38: in reraise
+    raise value.with_traceback(tb)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   urllib3.exceptions.ProtocolError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:223: in _retrieve_server_version
+    return self.version(api_version=False)["ApiVersion"]
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/daemon.py[0m:181: in version
+    return self._result(self._get(url), json=True)
+[1m[31mvenv/lib/python3.13/site-packages/docker/utils/decorators.py[0m:44: in inner
+    return f(self, *args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:246: in _get
+    return self.get(url, **self._set_request_timeout(kwargs))
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:602: in get
+    return self.request("GET", url, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:589: in request
+    resp = self.send(prep, **send_kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:703: in send
+    r = adapter.send(request, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:659: in send
+    raise ConnectionError(err, request=request)
+[1m[31mE   requests.exceptions.ConnectionError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_performance.py[0m:18: in pool
+    pool = ContainerPool(
+[1m[31mapp/container_pool.py[0m:98: in __init__
+    self.client = docker.from_env()
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:94: in from_env
+    return cls(
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:45: in __init__
+    self.api = APIClient(*args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:207: in __init__
+    self._version = self._retrieve_server_version()
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:230: in _retrieve_server_version
+    raise DockerException(
+[1m[31mE   docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+[31m[1m_ ERROR at setup of TestContainerPoolPerformance.test_container_acquisition_performance _[0m
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:644: in send
+    resp = conn.urlopen(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:841: in urlopen
+    retries = retries.increment(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/retry.py[0m:490: in increment
+    raise reraise(type(error), error, _stacktrace)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/util.py[0m:38: in reraise
+    raise value.with_traceback(tb)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   urllib3.exceptions.ProtocolError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:223: in _retrieve_server_version
+    return self.version(api_version=False)["ApiVersion"]
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/daemon.py[0m:181: in version
+    return self._result(self._get(url), json=True)
+[1m[31mvenv/lib/python3.13/site-packages/docker/utils/decorators.py[0m:44: in inner
+    return f(self, *args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:246: in _get
+    return self.get(url, **self._set_request_timeout(kwargs))
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:602: in get
+    return self.request("GET", url, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:589: in request
+    resp = self.send(prep, **send_kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:703: in send
+    r = adapter.send(request, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:659: in send
+    raise ConnectionError(err, request=request)
+[1m[31mE   requests.exceptions.ConnectionError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_performance.py[0m:18: in pool
+    pool = ContainerPool(
+[1m[31mapp/container_pool.py[0m:98: in __init__
+    self.client = docker.from_env()
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:94: in from_env
+    return cls(
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:45: in __init__
+    self.api = APIClient(*args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:207: in __init__
+    self._version = self._retrieve_server_version()
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:230: in _retrieve_server_version
+    raise DockerException(
+[1m[31mE   docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+[31m[1m_ ERROR at setup of TestContainerPoolPerformance.test_container_return_performance _[0m
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:644: in send
+    resp = conn.urlopen(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:841: in urlopen
+    retries = retries.increment(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/retry.py[0m:490: in increment
+    raise reraise(type(error), error, _stacktrace)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/util.py[0m:38: in reraise
+    raise value.with_traceback(tb)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   urllib3.exceptions.ProtocolError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:223: in _retrieve_server_version
+    return self.version(api_version=False)["ApiVersion"]
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/daemon.py[0m:181: in version
+    return self._result(self._get(url), json=True)
+[1m[31mvenv/lib/python3.13/site-packages/docker/utils/decorators.py[0m:44: in inner
+    return f(self, *args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:246: in _get
+    return self.get(url, **self._set_request_timeout(kwargs))
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:602: in get
+    return self.request("GET", url, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:589: in request
+    resp = self.send(prep, **send_kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:703: in send
+    r = adapter.send(request, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:659: in send
+    raise ConnectionError(err, request=request)
+[1m[31mE   requests.exceptions.ConnectionError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_performance.py[0m:18: in pool
+    pool = ContainerPool(
+[1m[31mapp/container_pool.py[0m:98: in __init__
+    self.client = docker.from_env()
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:94: in from_env
+    return cls(
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:45: in __init__
+    self.api = APIClient(*args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:207: in __init__
+    self._version = self._retrieve_server_version()
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:230: in _retrieve_server_version
+    raise DockerException(
+[1m[31mE   docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+[31m[1m_ ERROR at setup of TestContainerPoolPerformance.test_concurrent_container_operations _[0m
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   FileNotFoundError: [Errno 2] No such file or directory[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:644: in send
+    resp = conn.urlopen(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:841: in urlopen
+    retries = retries.increment(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/retry.py[0m:490: in increment
+    raise reraise(type(error), error, _stacktrace)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/util/util.py[0m:38: in reraise
+    raise value.with_traceback(tb)
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:787: in urlopen
+    response = self._make_request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connectionpool.py[0m:493: in _make_request
+    conn.request(
+[1m[31mvenv/lib/python3.13/site-packages/urllib3/connection.py[0m:500: in request
+    self.endheaders()
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1333: in endheaders
+    self._send_output(message_body, encode_chunked=encode_chunked)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1093: in _send_output
+    self.send(msg)
+[1m[31m/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/http/client.py[0m:1037: in send
+    self.connect()
+[1m[31mvenv/lib/python3.13/site-packages/docker/transport/unixconn.py[0m:26: in connect
+    sock.connect(self.unix_socket)
+[1m[31mE   urllib3.exceptions.ProtocolError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mDuring handling of the above exception, another exception occurred:[0m
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:223: in _retrieve_server_version
+    return self.version(api_version=False)["ApiVersion"]
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/daemon.py[0m:181: in version
+    return self._result(self._get(url), json=True)
+[1m[31mvenv/lib/python3.13/site-packages/docker/utils/decorators.py[0m:44: in inner
+    return f(self, *args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:246: in _get
+    return self.get(url, **self._set_request_timeout(kwargs))
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:602: in get
+    return self.request("GET", url, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:589: in request
+    resp = self.send(prep, **send_kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/sessions.py[0m:703: in send
+    r = adapter.send(request, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/requests/adapters.py[0m:659: in send
+    raise ConnectionError(err, request=request)
+[1m[31mE   requests.exceptions.ConnectionError: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+
+[33mThe above exception was the direct cause of the following exception:[0m
+[1m[31mtests/test_performance.py[0m:18: in pool
+    pool = ContainerPool(
+[1m[31mapp/container_pool.py[0m:98: in __init__
+    self.client = docker.from_env()
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:94: in from_env
+    return cls(
+[1m[31mvenv/lib/python3.13/site-packages/docker/client.py[0m:45: in __init__
+    self.api = APIClient(*args, **kwargs)
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:207: in __init__
+    self._version = self._retrieve_server_version()
+[1m[31mvenv/lib/python3.13/site-packages/docker/api/client.py[0m:230: in _retrieve_server_version
+    raise DockerException(
+[1m[31mE   docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))[0m
+[36m[1m=========================== short test summary info ============================[0m
+[31mERROR[0m tests/test_performance.py::[1mTestContainerPoolPerformance::test_quick_health_check_performance[0m - docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
+[31mERROR[0m tests/test_performance.py::[1mTestContainerPoolPerformance::test_deep_health_check_performance[0m - docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
+[31mERROR[0m tests/test_performance.py::[1mTestContainerPoolPerformance::test_container_reset_performance[0m - docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
+[31mERROR[0m tests/test_performance.py::[1mTestContainerPoolPerformance::test_container_acquisition_performance[0m - docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
+[31mERROR[0m tests/test_performance.py::[1mTestContainerPoolPerformance::test_container_return_performance[0m - docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
+[31mERROR[0m tests/test_performance.py::[1mTestContainerPoolPerformance::test_concurrent_container_operations[0m - docker.errors.DockerException: Error while fetching server API version: ('Connection aborted.', FileNotFoundError(2, 'No such file or directory'))
+[31m=================== [32m1 passed[0m, [33m9 warnings[0m, [31m[1m6 errors[0m[31m in 0.61s[0m[31m ====================[0m
