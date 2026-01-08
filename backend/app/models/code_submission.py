@@ -13,13 +13,13 @@ class CodeSubmission(Base):
     __table_args__ = (
         CheckConstraint("status IN ('success', 'error', 'timeout')", name='chk_status'),
         # 复合索引：按用户和课程查询提交记录（最常见查询）
-        Index('idx_user_lesson', 'user_id', 'lesson_id'),
+        Index('idx_submission_user_lesson', 'user_id', 'lesson_id'),
         # 复合索引：按用户和时间查询提交历史
-        Index('idx_user_submitted', 'user_id', 'submitted_at'),
+        Index('idx_submission_user_submitted', 'user_id', 'submitted_at'),
         # 复合索引：按课程和时间查询提交记录
-        Index('idx_lesson_submitted', 'lesson_id', 'submitted_at'),
+        Index('idx_submission_lesson_submitted', 'lesson_id', 'submitted_at'),
         # 复合索引：按课程、用户和状态查询（用于统计成功率）
-        Index('idx_lesson_user_status', 'lesson_id', 'user_id', 'status'),
+        Index('idx_submission_lesson_user_status', 'lesson_id', 'user_id', 'status'),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
