@@ -2,9 +2,10 @@
 
 **Interactive Agent Learning Platform** - 通过实践学习 AI Agent 开发
 
-[![CI Tests](https://github.com/helloagents/platform/workflows/CI%20-%20Test%20Suite/badge.svg)](https://github.com/helloagents/platform/actions)
-[![Backend Coverage](https://img.shields.io/badge/backend%20coverage-77%25-yellow)](./backend/htmlcov/index.html)
-[![Frontend Tests](https://img.shields.io/badge/frontend%20tests-65%20passing-brightgreen)](./frontend/coverage/)
+[![CI Tests](https://github.com/ai520510xyf-del/helloagents-platform/workflows/CI%20-%20Test%20Suite/badge.svg)](https://github.com/ai520510xyf-del/helloagents-platform/actions)
+[![Backend Coverage](https://img.shields.io/badge/backend%20coverage-82%25-brightgreen)](./backend/htmlcov/index.html)
+[![Frontend Coverage](https://img.shields.io/badge/frontend%20coverage-84.63%25-brightgreen)](./frontend/coverage/)
+[![Tests](https://img.shields.io/badge/tests-216%20passing-brightgreen)](#测试)
 
 ---
 
@@ -26,13 +27,13 @@ HelloAgents 是一个互动式学习平台，帮助开发者通过实践学习 A
 - **框架**: FastAPI 0.109.0
 - **数据库**: SQLite + SQLAlchemy ORM
 - **沙箱**: Docker (Python 3.11-slim)
-- **测试**: pytest (77% coverage, 39/39 tests passing)
+- **测试**: pytest (82% coverage, 151/151 tests passing)
 
 ### 前端
 - **框架**: React 18 + TypeScript
 - **构建工具**: Vite 5.4.13
 - **UI 库**: Tailwind CSS 3.4.17
-- **测试**: Vitest + React Testing Library (65/65 tests passing)
+- **测试**: Vitest + React Testing Library (84.63% coverage, 65/65 tests passing)
 
 ---
 
@@ -46,7 +47,7 @@ HelloAgents 是一个互动式学习平台，帮助开发者通过实践学习 A
 
 ### 1. 克隆仓库
 ```bash
-git clone <repository-url>
+git clone https://github.com/ai520510xyf-del/helloagents-platform.git
 cd helloagents-platform
 ```
 
@@ -379,25 +380,25 @@ npm test
 
 ## 当前状态
 
-### Phase 1 完成度: 90%
+### Phase 1 完成度: 95%
 
-**已完成**
+**Sprint 1 已完成** ✅
 - ✅ 数据库架构设计 (SQLite + SQLAlchemy)
 - ✅ ORM 模型实现 (5 张表)
-- ✅ 数据库 API 集成 (39/39 测试通过)
-- ✅ 沙箱安全加固 (安全评分 75/100)
-- ✅ 后端测试框架 (pytest, 77% 覆盖率)
-- ✅ 前端测试框架 (Vitest, 65/65 测试通过)
+- ✅ 数据库 API 集成 (151/151 测试通过)
+- ✅ 沙箱安全加固 (80/80 测试通过)
+- ✅ 后端测试框架 (pytest, 82% 覆盖率, 151 测试)
+- ✅ 前端测试框架 (Vitest, 84.63% 覆盖率, 65 测试)
 - ✅ LearnPage 重构 (705 行 → 213 行)
-- ✅ Git 仓库初始化
+- ✅ Git 仓库初始化并推送到 GitHub
+- ✅ 测试框架增强 (MSW 2.x, 测试工厂)
+- ✅ CI/CD 配置优化 (GitHub Actions)
 
-**进行中 (Sprint 1)**
-- 🔄 前端测试覆盖率评估
-- 🔄 后端测试覆盖率提升 (77% → 80%+)
-- 🔄 CI 自动化测试配置
+**进行中 (Sprint 2)**
+- 🔄 日志监控系统 (structlog + Sentry)
+- 🔄 容器池架构设计
 
-**计划中 (Sprint 2-4)**
-- 📋 日志监控系统 (structlog + Sentry)
+**计划中 (Sprint 3-4)**
 - 📋 容器池实现 (性能优化)
 - 📋 错误处理统一 (前后端)
 - 📋 API 版本控制
@@ -427,9 +428,9 @@ MIT License - 详见 `LICENSE` 文件
 
 ## 联系方式
 
-- **项目主页**: [GitHub Repository]
-- **问题反馈**: [GitHub Issues]
-- **文档**: [Wiki]
+- **项目主页**: [https://github.com/ai520510xyf-del/helloagents-platform](https://github.com/ai520510xyf-del/helloagents-platform)
+- **问题反馈**: [GitHub Issues](https://github.com/ai520510xyf-del/helloagents-platform/issues)
+- **文档**: [Wiki](https://github.com/ai520510xyf-del/helloagents-platform/wiki)
 
 ---
 
