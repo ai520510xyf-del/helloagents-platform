@@ -13,7 +13,7 @@ export interface ErrorDetails {
  * React 错误信息接口
  */
 export interface ReactErrorInfo {
-  componentStack?: string;
+  componentStack?: string | null;
   digest?: string;
 }
 
@@ -42,7 +42,7 @@ class ToastManager {
     {
       count: number;
       firstSeen: number;
-      timeout: NodeJS.Timeout;
+      timeout: ReturnType<typeof setTimeout>;
     }
   > = new Map();
 
@@ -98,7 +98,7 @@ class ToastManager {
    * 刷新批处理的 Toast
    */
   private static flushBatchedToast(
-    key: string,
+    _key: string,
     count: number,
     type: 'error' | 'warning' | 'info' | 'success',
     message: string

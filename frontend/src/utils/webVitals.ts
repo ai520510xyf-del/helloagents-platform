@@ -10,7 +10,7 @@
  * - INP (Interaction to Next Paint): 交互到下次绘制 < 200ms
  */
 
-import { onCLS, onFID, onLCP, onFCP, onTTFB, onINP, type Metric } from 'web-vitals';
+import { onCLS, onLCP, onFCP, onTTFB, onINP, type Metric } from 'web-vitals';
 
 // 性能数据上报接口
 interface PerformanceData {
@@ -83,10 +83,6 @@ export function initWebVitals() {
   // 监控 LCP - 最大内容绘制时间
   // 好: < 2.5s, 需要改进: 2.5s-4s, 差: > 4s
   onLCP(sendToAnalytics);
-
-  // 监控 FID - 首次输入延迟
-  // 好: < 100ms, 需要改进: 100ms-300ms, 差: > 300ms
-  onFID(sendToAnalytics);
 
   // 监控 CLS - 累计布局偏移
   // 好: < 0.1, 需要改进: 0.1-0.25, 差: > 0.25
