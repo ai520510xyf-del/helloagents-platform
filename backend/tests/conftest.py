@@ -138,3 +138,96 @@ def sample_progress(db_session, sample_user, sample_lesson):
     db_session.refresh(progress)
 
     return progress
+
+
+@pytest.fixture
+def sample_submission(db_session, sample_user, sample_lesson):
+    """创建测试代码提交"""
+    from app.models.code_submission import CodeSubmission
+
+    submission = CodeSubmission(
+        user_id=sample_user.id,
+        lesson_id=sample_lesson.id,
+        code="print('Hello, World!')",
+        success=True,
+        output="Hello, World!\n",
+        execution_time=0.123
+    )
+    db_session.add(submission)
+    db_session.commit()
+    db_session.refresh(submission)
+
+    return submission
+
+
+@pytest.fixture
+def sample_chat_message(db_session, sample_user):
+    """创建测试聊天消息"""
+    from app.models.chat_message import ChatMessage
+
+    chat_message = ChatMessage(
+        user_id=sample_user.id,
+        message="How do I print in Python?",
+        response="You can use the print() function."
+    )
+    db_session.add(chat_message)
+    db_session.commit()
+    db_session.refresh(chat_message)
+
+    return chat_message
+
+
+# 导入测试工厂函数（使用时导入）
+@pytest.fixture
+def user_factory(db_session):
+    """用户工厂fixture"""
+    from tests.factories import create_user_data
+
+    def _create_user(**kwargs):
+        return create_user_data(db_session, **kwargs)
+
+    return _create_user
+
+
+@pytest.fixture
+def lesson_factory(db_session):
+    """课程工厂fixture"""
+    from tests.factories import create_lesson_data
+
+    def _create_lesson(**kwargs):
+        return create_lesson_data(db_session, **kwargs)
+
+    return _create_lesson
+
+
+@pytest.fixture
+def progress_factory(db_session):
+    """进度工厂fixture"""
+    from tests.factories import create_progress_data
+
+    def _create_progress(**kwargs):
+        return create_progress_data(db_session, **kwargs)
+
+    return _create_progress
+
+
+@pytest.fixture
+def submission_factory(db_session):
+    """提交工厂fixture"""
+    from tests.factories import create_submission_data
+
+    def _create_submission(**kwargs):
+        return create_submission_data(db_session, **kwargs)
+
+    return _create_submission
+
+
+@pytest.fixture
+def chat_message_factory(db_session):
+    """聊天消息工厂fixture"""
+    from tests.factories import create_chat_message_data
+
+    def _create_chat_message(**kwargs):
+        return create_chat_message_data(db_session, **kwargs)
+
+    return _create_chat_message
