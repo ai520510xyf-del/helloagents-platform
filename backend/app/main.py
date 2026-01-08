@@ -76,11 +76,34 @@ app = FastAPI(
     redoc_url="/api/v1/redoc"
 )
 
-# 初始化 DeepSeek 客户端（使用 OpenAI SDK）
-deepseek_client = OpenAI(
-    api_key=os.environ.get("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com/v1"  # 需要添加 /v1 后缀
-)
+# DeepSeek 客户端延迟初始化
+_deepseek_client = None
+
+def get_deepseek_client():
+    """
+    获取 DeepSeek 客户端实例（延迟初始化）
+
+    只在真正需要时才创建客户端，避免在导入时要求 API_KEY
+
+    Raises:
+        ValueError: 当 DEEPSEEK_API_KEY 环境变量未设置时
+
+    Returns:
+        OpenAI: DeepSeek 客户端实例
+    """
+    global _deepseek_client
+    if _deepseek_client is None:
+        api_key = os.environ.get("DEEPSEEK_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "DEEPSEEK_API_KEY environment variable is not set. "
+                "Please set it to use AI chat features."
+            )
+        _deepseek_client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.deepseek.com/v1"
+        )
+    return _deepseek_client
 
 # 添加中间件 (顺序很重要 - 后添加的先执行)
 from app.middleware.logging_middleware import (
@@ -548,6 +571,7 @@ async def chat_with_ai(
         )
 
         # 调用 DeepSeek API
+        deepseek_client = get_deepseek_client()
         response = deepseek_client.chat.completions.create(
             model="deepseek-chat",
             messages=messages,

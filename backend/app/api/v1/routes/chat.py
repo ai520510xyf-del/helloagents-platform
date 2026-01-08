@@ -19,13 +19,35 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
+# DeepSeek 客户端延迟初始化
+_deepseek_client = None
+
 
 def get_deepseek_client():
-    """获取 DeepSeek 客户端实例"""
-    return OpenAI(
-        api_key=os.environ.get("DEEPSEEK_API_KEY"),
-        base_url="https://api.deepseek.com/v1"
-    )
+    """
+    获取 DeepSeek 客户端实例（延迟初始化）
+
+    只在真正需要时才创建客户端，避免在导入时要求 API_KEY
+
+    Raises:
+        ValueError: 当 DEEPSEEK_API_KEY 环境变量未设置时
+
+    Returns:
+        OpenAI: DeepSeek 客户端实例
+    """
+    global _deepseek_client
+    if _deepseek_client is None:
+        api_key = os.environ.get("DEEPSEEK_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "DEEPSEEK_API_KEY environment variable is not set. "
+                "Please set it to use AI chat features."
+            )
+        _deepseek_client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.deepseek.com/v1"
+        )
+    return _deepseek_client
 
 
 # ============================================
