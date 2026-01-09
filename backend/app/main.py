@@ -128,7 +128,10 @@ app.add_middleware(LoggingMiddleware)
 # 配置 CORS - 允许前端访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # Vite 开发服务器
+    allow_origins=[
+        "http://localhost:5173",  # Vite 开发服务器
+        "https://helloagents-platform.pages.dev",  # Cloudflare Pages 生产环境
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
