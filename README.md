@@ -23,11 +23,15 @@ HelloAgents 是一个帮助开发者学习 AI Agent 开发的互动式学习平�
 
 ### 方式 1：在线访问（推荐）
 
-直接访问：[HelloAgents 学习平台](#)（部署中，即将上线）
+直接访问：**[HelloAgents 学习平台](https://helloagents-platform.pages.dev)** 🚀
 
 无需安装，立即开始学习！
 
-> 💡 **想要部署自己的实例？** 查看 [部署指南](./DEPLOY.md)
+**部署架构：**
+- 前端：[Cloudflare Pages](https://helloagents-platform.pages.dev)
+- 后端：[Render](https://helloagents-platform.onrender.com)
+
+> 💡 **想要部署自己的实例？** 查看 [部署指南](./DEPLOY.md) 和 [Cloudflare部署指南](./CLOUDFLARE_DEPLOY.md)
 
 ### 方式 2：本地运行
 
@@ -111,8 +115,46 @@ Docker 用于创建安全隔离的代码执行环境，确保你的代码不会�
 ### 学习需要付费吗？
 完全免费！所有课程内容和功能都是开源免费的。
 
+### AI 助手不工作怎么办？
+AI 助手需要配置 DeepSeek API Key：
+- **本地开发**：在 `backend/.env` 文件中添加 `DEEPSEEK_API_KEY=your_key_here`
+- **生产环境**：在 Render 的环境变量中配置（详见下方"部署配置"）
+- 获取 API Key：访问 [DeepSeek Platform](https://platform.deepseek.com/api_keys)
+
+### 遇到 CORS 错误怎么办？
+确保后端的 CORS 配置包含了你的前端域名。编辑 `backend/app/main.py` 中的 `allow_origins` 列表。
+
 ### 遇到 bug 怎么办？
 欢迎在 [GitHub Issues](https://github.com/ai520510xyf-del/helloagents-platform/issues) 提交问题。
+
+---
+
+## ⚙️ 部署配置
+
+### 在 Render 上配置环境变量
+
+如果你部署了自己的后端实例，需要在 Render 上配置以下环境变量：
+
+1. 登录 [Render Dashboard](https://dashboard.render.com/)
+2. 选择你的 Web Service
+3. 进入 **Environment** 标签
+4. 添加以下环境变量：
+
+| 环境变量 | 说明 | 示例值 |
+|---------|------|--------|
+| `DEEPSEEK_API_KEY` | DeepSeek AI API密钥（**必需**，用于AI助手） | `sk-xxxxx...` |
+| `DATABASE_URL` | PostgreSQL 连接字符串（可选，不配置则使用SQLite） | `postgresql://user:pass@host:5432/db` |
+| `ALLOWED_ORIGINS` | 允许的前端域名（多个用逗号分隔） | `https://your-app.pages.dev` |
+
+> ⚠️ **重要**：添加或修改环境变量后，Render 会自动重新部署应用。
+
+### 获取 DeepSeek API Key
+
+1. 访问 [DeepSeek Platform](https://platform.deepseek.com/)
+2. 注册/登录账号
+3. 进入 [API Keys 页面](https://platform.deepseek.com/api_keys)
+4. 创建新的 API Key
+5. 复制密钥并配置到环境变量中
 
 ---
 
