@@ -14,15 +14,21 @@ import { CourseMenu } from '../components/learn/CourseMenu';
 import { CodeEditorPanel } from '../components/learn/CodeEditorPanel';
 import { ContentPanel } from '../components/learn/ContentPanel';
 import { TerminalOutput } from '../components/learn/TerminalOutput';
+import { MobileLayout } from '../components/learn/MobileLayout';
+import { TabletLayout } from '../components/learn/TabletLayout';
 import { calculateProgress } from '../data/courses';
 import { useLesson } from '../hooks/useLesson';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useCodeExecution } from '../hooks/useCodeExecution';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 const STORAGE_PREFIX = 'helloagents_lesson_code_';
 const THEME_KEY = 'helloagents_theme';
 
 export function LearnPage() {
+  // 响应式布局检测
+  const { layoutType } = useResponsiveLayout();
+
   // 课程管理
   const { currentLesson, changeLesson } = useLesson();
 
@@ -143,6 +149,89 @@ export function LearnPage() {
   // 计算当前进度 - 使用 useMemo 缓存计算结果
   const progress = useMemo(() => calculateProgress(), []);
 
+  // 移动端布局
+  if (layoutType === 'mobile') {
+    return (
+      <>
+        <MigrationPrompt theme={theme} />
+        <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-bg-dark text-text-primary' : 'bg-white text-gray-900'}`}>
+          <NavigationBar
+            currentLesson={currentLesson}
+            progress={progress}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+          <div className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
+            <MobileLayout
+              currentLesson={currentLesson}
+              onLessonChange={handleLessonChange}
+              code={code}
+              onCodeChange={handleCodeChange}
+              cursorPosition={cursorPosition}
+              onCursorChange={handleCursorChange}
+              isRunning={isRunning}
+              output={output}
+              onRun={handleRunCode}
+              onStop={stopExecution}
+              onReset={handleReset}
+              onClearOutput={clearOutput}
+              activeContentTab={activeTab}
+              onContentTabChange={setActiveTab}
+              chatMessages={chatMessages}
+              chatInput={chatInput}
+              onChatInputChange={setChatInput}
+              isChatLoading={isChatLoading}
+              onSendMessage={sendMessage}
+              theme={theme}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // 平板布局
+  if (layoutType === 'tablet') {
+    return (
+      <>
+        <MigrationPrompt theme={theme} />
+        <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-bg-dark text-text-primary' : 'bg-white text-gray-900'}`}>
+          <NavigationBar
+            currentLesson={currentLesson}
+            progress={progress}
+            theme={theme}
+            onToggleTheme={toggleTheme}
+          />
+          <div className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
+            <TabletLayout
+              currentLesson={currentLesson}
+              onLessonChange={handleLessonChange}
+              code={code}
+              onCodeChange={handleCodeChange}
+              cursorPosition={cursorPosition}
+              onCursorChange={handleCursorChange}
+              isRunning={isRunning}
+              output={output}
+              onRun={handleRunCode}
+              onStop={stopExecution}
+              onReset={handleReset}
+              onClearOutput={clearOutput}
+              activeContentTab={activeTab}
+              onContentTabChange={setActiveTab}
+              chatMessages={chatMessages}
+              chatInput={chatInput}
+              onChatInputChange={setChatInput}
+              isChatLoading={isChatLoading}
+              onSendMessage={sendMessage}
+              theme={theme}
+            />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // 桌面布局（默认三栏布局）
   return (
     <>
       {/* 数据迁移提示 */}

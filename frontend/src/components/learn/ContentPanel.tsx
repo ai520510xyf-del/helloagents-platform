@@ -40,7 +40,7 @@ export function ContentPanel({
       <div className={`h-12 border-b flex items-center gap-1 px-2 flex-shrink-0 ${theme === 'dark' ? 'border-border' : 'border-gray-200'}`}>
         <button
           onClick={() => onTabChange('content')}
-          className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+          className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-all duration-200 active:scale-95 touch-manipulation relative ${
             activeTab === 'content'
               ? 'bg-primary/10 text-primary'
               : (theme === 'dark' ? 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900')
@@ -49,11 +49,14 @@ export function ContentPanel({
           aria-selected={activeTab === 'content'}
           data-testid="content-tab"
         >
+          {activeTab === 'content' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+          )}
           📖 课程内容
         </button>
         <button
           onClick={() => onTabChange('ai')}
-          className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-colors ${
+          className={`flex-1 px-3 py-2 text-sm font-medium rounded transition-all duration-200 active:scale-95 touch-manipulation relative ${
             activeTab === 'ai'
               ? 'bg-primary/10 text-primary'
               : (theme === 'dark' ? 'text-text-secondary hover:bg-bg-elevated hover:text-text-primary' : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900')
@@ -62,6 +65,9 @@ export function ContentPanel({
           aria-selected={activeTab === 'ai'}
           data-testid="ai-tab"
         >
+          {activeTab === 'ai' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+          )}
           <Bot className="h-4 w-4 inline-block mr-1" /> AI 助手
         </button>
       </div>

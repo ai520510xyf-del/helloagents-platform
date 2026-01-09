@@ -20,48 +20,52 @@ interface NavigationBarProps {
 
 export const NavigationBar = memo(function NavigationBar({ currentLesson, progress, theme, onToggleTheme }: NavigationBarProps) {
   return (
-    <header className={`h-14 border-b flex items-center justify-between px-6 flex-shrink-0 ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Code className="h-5 w-5 text-primary" />
-          <span className="font-semibold text-lg">HelloAgents</span>
+    <header className={`h-14 md:h-16 border-b flex items-center justify-between px-3 md:px-6 flex-shrink-0 safe-area-inset-top ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
+      {/* 左侧：Logo和标题 */}
+      <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+          <Code className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+          <span className="font-semibold text-base md:text-lg">HelloAgents</span>
         </div>
-        <div className={`text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>
-          第{currentLesson.chapter}章 {currentLesson.title}
+        <div className={`text-xs md:text-sm truncate ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>
+          <span className="hidden sm:inline">第{currentLesson.chapter}章 </span>
+          <span className="truncate">{currentLesson.title}</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* 进度 */}
+      {/* 右侧：进度、主题切换、用户 */}
+      <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+        {/* 进度 - 桌面端显示详细，移动端显示简洁 */}
         <div className="flex items-center gap-2">
-          <div className={`text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>学习进度</div>
-          <div className="flex items-center gap-2">
-            <div className={`w-32 h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-border' : 'bg-gray-300'}`}>
-              <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
+          <div className={`text-xs md:text-sm hidden md:block ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>学习进度</div>
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <div className={`w-16 md:w-32 h-1.5 md:h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-border' : 'bg-gray-300'}`}>
+              <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
-            <span className={`text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>{progress}%</span>
+            <span className={`text-xs md:text-sm font-medium ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>{progress}%</span>
           </div>
         </div>
 
         {/* 主题切换按钮 */}
         <button
           onClick={onToggleTheme}
-          className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${
+          className={`h-8 w-8 md:h-9 md:w-9 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-95 touch-manipulation ${
             theme === 'dark'
               ? 'bg-bg-elevated hover:bg-border'
               : 'bg-gray-200 hover:bg-gray-300'
           }`}
           title={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
+          aria-label={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
         >
           {theme === 'dark' ? (
-            <Sun className="h-4 w-4 text-text-secondary" />
+            <Sun className="h-3.5 w-3.5 md:h-4 md:w-4 text-text-secondary transition-transform hover:rotate-180 duration-300" />
           ) : (
-            <Moon className="h-4 w-4 text-gray-600" />
+            <Moon className="h-3.5 w-3.5 md:h-4 md:w-4 text-gray-600 transition-transform hover:-rotate-12 duration-300" />
           )}
         </button>
 
-        {/* 用户头像占位 */}
-        <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs ${
+        {/* 用户头像占位 - 移动端隐藏 */}
+        <div className={`h-7 w-7 md:h-8 md:w-8 rounded-full hidden sm:flex items-center justify-center text-xs ${
           theme === 'dark'
             ? 'bg-bg-elevated text-text-secondary'
             : 'bg-gray-200 text-gray-600'

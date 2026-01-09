@@ -8,15 +8,16 @@ on:
   workflow_dispatch:
 
 jobs:
-  e2e-tests:
-    name: E2E Tests on ${{ matrix.browser }}
+  # 桌面浏览器测试
+  desktop-e2e:
+    name: Desktop E2E - ${{ matrix.browser }}
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox]
+        browser: [chromium, firefox, webkit]
 
     steps:
       - name: Checkout code
@@ -37,21 +38,18 @@ jobs:
         working-directory: ./frontend
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build
-
-      - name: Run E2E tests
+      - name: Run E2E tests (Desktop)
         working-directory: ./frontend
         run: npm run test:e2e:${{ matrix.browser }}
         env:
           CI: true
+          BASE_URL: https://helloagents-platform.pages.dev
 
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report-${{ matrix.browser }}
+          name: playwright-report-desktop-${{ matrix.browser }}
           path: frontend/playwright-report/
           retention-days: 30
 
@@ -59,30 +57,91 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-results-${{ matrix.browser }}
-          path: frontend/playwright-report/results.json
+          name: test-results-desktop-${{ matrix.browser }}
+          path: frontend/test-results/
           retention-days: 30
 
-      - name: Upload screenshots
+      - name: Upload screenshots on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-screenshots-${{ matrix.browser }}
-          path: frontend/playwright-report/screenshots/
+          name: screenshots-desktop-${{ matrix.browser }}
+          path: frontend/test-results/**/*.png
           retention-days: 7
 
-      - name: Upload videos
+      - name: Upload videos on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-videos-${{ matrix.browser }}
+          name: videos-desktop-${{ matrix.browser }}
+          path: frontend/test-results/**/*.webm
+          retention-days: 7
+
+  # 移动端测试
+  mobile-e2e:
+    name: Mobile E2E - ${{ matrix.device }}
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [mobile-chrome, mobile-safari]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests (Mobile)
+        working-directory: ./frontend
+        run: npx playwright test --project=${{ matrix.device }}
+        env:
+          CI: true
+          BASE_URL: https://helloagents-platform.pages.dev
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.device }}
+          path: frontend/playwright-report/
+          retention-days: 30
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.device }}
           path: frontend/test-results/
+          retention-days: 30
+
+      - name: Upload screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.device }}
+          path: frontend/test-results/**/*.png
           retention-days: 7
 
   # 合并测试结果
   merge-reports:
     name: Merge Test Reports
-    needs: e2e-tests
+    needs: [desktop-e2e, mobile-e2e]
     if: always()
     runs-on: ubuntu-latest
 
@@ -98,5 +157,14 @@ jobs:
       - name: Generate summary
         run: |
           echo "## E2E Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Desktop Browsers" >> $GITHUB_STEP_SUMMARY
+          echo "- Chromium" >> $GITHUB_STEP_SUMMARY
+          echo "- Firefox" >> $GITHUB_STEP_SUMMARY
+          echo "- WebKit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Mobile Devices" >> $GITHUB_STEP_SUMMARY
+          echo "- Mobile Chrome (Pixel 5)" >> $GITHUB_STEP_SUMMARY
+          echo "- Mobile Safari (iPhone 12)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Test reports are available in the artifacts section." >> $GITHUB_STEP_SUMMARY

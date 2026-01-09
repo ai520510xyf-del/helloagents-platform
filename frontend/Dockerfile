@@ -1,7 +1,7 @@
 # Multi-stage build for React/Vite frontend
 
 # Stage 1: Builder - Build the application
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 LABEL maintainer="HelloAgents Team <team@helloagents.com>"
 LABEL description="HelloAgents Platform Frontend"

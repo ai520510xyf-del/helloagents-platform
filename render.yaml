@@ -1,0 +1,71 @@
+# Render 部署配置
+# 文档: https://render.com/docs/infrastructure-as-code
+
+services:
+  # Backend API Service
+  - type: web
+    name: helloagents-backend
+    runtime: python
+    region: oregon # 或 oregon、frankfurt、singapore
+    plan: starter # 或 standard、pro
+    branch: main
+    rootDir: backend
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2
+
+    # 健康检查配置
+    healthCheckPath: /health/ready
+
+    # 环境变量
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: helloagents-db
+          property: connectionString
+
+      - key: DEEPSEEK_API_KEY
+        sync: false  # 从 Render Dashboard 手动设置
+
+      - key: SENTRY_DSN
+        sync: false  # 从 Render Dashboard 手动设置
+
+      - key: SENTRY_ENVIRONMENT
+        value: production
+
+      - key: SENTRY_TRACES_SAMPLE_RATE
+        value: 0.1
+
+      - key: LOG_LEVEL
+        value: info
+
+      - key: ENABLE_CONTAINER_POOL
+        value: false  # Render 不支持 Docker-in-Docker
+
+    # 自动部署配置
+    autoDeploy: true
+
+    # 自动缩放和健康检查
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
+
+    # 重启策略
+    restartPolicy:
+      type: onFailure
+      delaySeconds: 10
+
+databases:
+  # PostgreSQL Database
+  - name: helloagents-db
+    databaseName: helloagents
+    user: helloagents
+    region: oregon # 与 web service 相同的区域
+    plan: starter # 或 standard、pro
+
+    # 自动备份
+    ipAllowList: [] # 空列表表示允许所有 Render 服务访问

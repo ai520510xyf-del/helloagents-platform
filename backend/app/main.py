@@ -340,9 +340,124 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """健康检查端点"""
-    return {
+    """
+    完整健康检查端点
+
+    检查所有系统组件的健康状态：
+    - API 服务状态
+    - 数据库连接
+    - 沙箱容器池
+    - AI 服务配置
+    """
+    health_status = {
         "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "version": "1.0.0",
+        "components": {}
+    }
+
+    # 检查数据库连接
+    try:
+        db = next(get_db())
+        db.execute("SELECT 1")
+        health_status["components"]["database"] = {
+            "status": "healthy",
+            "message": "Database connection successful"
+        }
+    except Exception as e:
+        health_status["status"] = "unhealthy"
+        health_status["components"]["database"] = {
+            "status": "unhealthy",
+            "message": f"Database connection failed: {str(e)}"
+        }
+        logger.error("health_check_database_failed", error=str(e))
+
+    # 检查沙箱容器池
+    try:
+        if sandbox.pool:
+            pool_stats = sandbox.pool.get_stats()
+            health_status["components"]["sandbox_pool"] = {
+                "status": "healthy",
+                "available_containers": pool_stats.get("available_containers", 0),
+                "in_use_containers": pool_stats.get("in_use_containers", 0)
+            }
+        else:
+            health_status["components"]["sandbox_pool"] = {
+                "status": "disabled",
+                "message": "Container pool is not enabled"
+            }
+    except Exception as e:
+        health_status["components"]["sandbox_pool"] = {
+            "status": "error",
+            "message": f"Container pool check failed: {str(e)}"
+        }
+        logger.error("health_check_sandbox_failed", error=str(e))
+
+    # 检查 AI 服务配置
+    try:
+        deepseek_api_key = os.environ.get("DEEPSEEK_API_KEY")
+        if deepseek_api_key:
+            health_status["components"]["ai_service"] = {
+                "status": "configured",
+                "message": "AI service API key is configured"
+            }
+        else:
+            health_status["components"]["ai_service"] = {
+                "status": "not_configured",
+                "message": "AI service API key is not configured"
+            }
+    except Exception as e:
+        health_status["components"]["ai_service"] = {
+            "status": "error",
+            "message": f"AI service check failed: {str(e)}"
+        }
+
+    # 如果任何组件不健康，返回 503 状态码
+    status_code = 200 if health_status["status"] == "healthy" else 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content=health_status
+    )
+
+
+@app.get("/health/ready")
+async def readiness_check():
+    """
+    就绪检查端点 (Readiness Probe)
+
+    检查应用是否准备好接收流量
+    只检查关键依赖项（数据库）
+    """
+    try:
+        db = next(get_db())
+        db.execute("SELECT 1")
+        return {
+            "status": "ready",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error("readiness_check_failed", error=str(e))
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "not_ready",
+                "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+
+@app.get("/health/live")
+async def liveness_check():
+    """
+    存活检查端点 (Liveness Probe)
+
+    检查应用是否还在运行
+    只做基本的响应检查
+    """
+    return {
+        "status": "alive",
         "timestamp": datetime.now().isoformat()
     }
 
