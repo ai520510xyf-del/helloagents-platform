@@ -7,14 +7,15 @@ import os
 from typing import Optional, List, Dict
 from pathlib import Path
 
-# hello-agents 项目的文档路径
-HELLO_AGENTS_DOCS_PATH = "/Users/anker/Desktop/work/mydocuments/project/agent-study/hello-agents/docs"
+# 课程文档路径（项目内相对路径）
+# 从当前文件位置 (backend/app/courses.py) 向上两级到 backend，再进入 docs
+DOCS_PATH = Path(__file__).parent.parent / "docs"
 
 class CourseManager:
     """课程管理器"""
 
     def __init__(self):
-        self.docs_path = Path(HELLO_AGENTS_DOCS_PATH)
+        self.docs_path = DOCS_PATH
         self._course_structure = self._init_course_structure()
 
     def _init_course_structure(self) -> Dict:
