@@ -1,4 +1,17 @@
-# Railway 部署需要在根目录有 requirements.txt 文件
-# 实际依赖在 backend/requirements.txt
+# Railway 部署依赖（与 backend/requirements.txt 同步）
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-dotenv==1.0.0
+pydantic==2.10.5
+pydantic-settings==2.7.1
+websockets==14.1
+python-multipart==0.0.20
+docker==7.1.0
+anthropic==0.43.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.10
+openai==1.59.5
 
--r backend/requirements.txt
+# 日志和监控
+structlog==24.4.0
+sentry-sdk==2.19.2
