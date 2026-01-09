@@ -31,7 +31,7 @@ HelloAgents 是一个帮助开发者学习 AI Agent 开发的互动式学习平�
 - 前端：[Cloudflare Pages](https://helloagents-platform.pages.dev)
 - 后端：[Render](https://helloagents-platform.onrender.com)
 
-> 💡 **想要部署自己的实例？** 查看 [部署指南](./DEPLOY.md) 和 [Cloudflare部署指南](./CLOUDFLARE_DEPLOY.md)
+> 💡 **想要部署自己的实例？** 查看 [Cloudflare部署指南](./CLOUDFLARE_DEPLOY.md)
 
 ### 方式 2：本地运行
 
