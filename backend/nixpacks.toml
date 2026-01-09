@@ -1,0 +1,11 @@
+# Nixpacks 配置 (Railway 使用的构建系统)
+# 文档: https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["python311"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
