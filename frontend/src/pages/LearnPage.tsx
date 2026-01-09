@@ -172,7 +172,11 @@ export function LearnPage() {
                 />
               </Panel>
 
-              <Separator className="w-1 bg-gray-300 hover:bg-blue-500 transition-colors" />
+              <Separator className={`w-1 transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-700 hover:bg-blue-400'
+                  : 'bg-gray-300 hover:bg-blue-500'
+              }`} />
 
               {/* 中间：代码编辑器 */}
               <Panel defaultSize={50} minSize={380} style={{ height: '100%', overflow: 'auto' }}>
@@ -190,7 +194,11 @@ export function LearnPage() {
                 />
               </Panel>
 
-              <Separator className="w-1 bg-gray-300 hover:bg-blue-500 transition-colors" />
+              <Separator className={`w-1 transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-700 hover:bg-blue-400'
+                  : 'bg-gray-300 hover:bg-blue-500'
+              }`} />
 
               {/* 右侧：课程内容 + AI 助手 */}
               <Panel defaultSize={30} minSize={20} style={{ height: '100%', overflow: 'auto' }}>
