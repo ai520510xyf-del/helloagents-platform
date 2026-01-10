@@ -25,6 +25,11 @@
     <!-- 性能优化: DNS预解析和预连接 -->
     <link rel="preconnect" href="https://helloagents-platform.onrender.com" crossorigin />
     <link rel="dns-prefetch" href="https://helloagents-platform.onrender.com" />
+    <link rel="preconnect" href="http://localhost:8000" />
+
+    <!-- 性能优化: 预加载关键资源 -->
+    <link rel="modulepreload" href="/src/main.tsx" />
+    <link rel="prefetch" as="script" href="/src/components/LazyCodeEditor.tsx" />
 
     <!-- 性能优化: 字体加载优化 -->
     <style>

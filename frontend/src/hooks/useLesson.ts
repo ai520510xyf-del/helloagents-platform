@@ -44,20 +44,32 @@ export function useLesson() {
           setIsLoading(true);
           localStorage.setItem(LAST_LESSON_ID_KEY, currentLesson.id);
 
-          // 优先从缓存加载
-          const lessonData = await cacheManager.prefetchLesson(
+          // 优先从缓存加载，设置合理超时避免阻塞页面加载
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('timeout')), 3000);
+          });
+
+          const lessonDataPromise = cacheManager.prefetchLesson(
             currentLesson.id,
             () => getLessonContent(currentLesson.id)
           );
 
-          // 使用不可变更新方式更新状态
-          setCurrentLesson(prevLesson => ({
-            ...prevLesson,
-            content: lessonData.content,
-            codeTemplate: lessonData.code_template
-          }));
+          try {
+            const lessonData = await Promise.race([lessonDataPromise, timeoutPromise]);
 
-          setError(null);
+            // 使用不可变更新方式更新状态
+            setCurrentLesson(prevLesson => ({
+              ...prevLesson,
+              content: lessonData.content,
+              codeTemplate: lessonData.code_template
+            }));
+
+            setError(null);
+          } catch (timeoutError) {
+            // 超时时使用默认数据，不阻塞页面
+            console.warn('课程内容加载超时，使用默认数据');
+            setError(null);
+          }
         } catch (error) {
           console.error('加载初始课程内容失败:', error);
           setError('加载课程内容失败');
@@ -78,26 +90,33 @@ export function useLesson() {
         setIsLoading(true);
         setError(null);
 
+        // 立即更新课程基本信息，确保UI响应
+        setCurrentLesson({
+          ...lesson,
+          content: lesson.content || '# 加载中...\n\n正在加载课程内容...',
+          codeTemplate: lesson.codeTemplate || ''
+        });
+
         // 保存当前选择的课程ID到本地存储
         localStorage.setItem(LAST_LESSON_ID_KEY, lessonId);
 
-        // 优先从缓存读取，缓存未命中时从网络获取
+        // 异步加载完整课程数据（优先从缓存读取）
         const lessonData = await cacheManager.prefetchLesson(
           lessonId,
           () => getLessonContent(lessonId)
         );
 
-        // 使用不可变更新方式更新课程内容
-        setCurrentLesson({
-          ...lesson,
+        // 更新完整的课程内容
+        setCurrentLesson(prevLesson => ({
+          ...prevLesson,
           content: lessonData.content,
           codeTemplate: lessonData.code_template
-        });
+        }));
       } catch (error) {
         console.error('加载课程内容失败:', error);
         setError('加载课程内容失败');
 
-        // 如果加载失败，使用本地数据
+        // 如果加载失败，至少显示基本信息
         localStorage.setItem(LAST_LESSON_ID_KEY, lessonId);
         setCurrentLesson(lesson);
       } finally {

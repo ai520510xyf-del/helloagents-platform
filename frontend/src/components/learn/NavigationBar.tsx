@@ -20,14 +20,20 @@ interface NavigationBarProps {
 
 export const NavigationBar = memo(function NavigationBar({ currentLesson, progress, theme, onToggleTheme }: NavigationBarProps) {
   return (
-    <header className={`h-14 md:h-16 border-b flex items-center justify-between px-3 md:px-6 flex-shrink-0 safe-area-inset-top ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
+    <header
+      className={`h-14 md:h-16 border-b flex items-center justify-between px-3 md:px-6 flex-shrink-0 safe-area-inset-top ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}
+      data-testid="navbar"
+    >
       {/* 左侧：Logo和标题 */}
       <div className="flex items-center gap-2 md:gap-4 min-w-0 flex-1">
         <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
           <Code className="h-4 w-4 md:h-5 md:w-5 text-primary" />
-          <span className="font-semibold text-base md:text-lg">HelloAgents</span>
+          <span className="font-semibold text-base md:text-lg" data-testid="app-title">HelloAgents</span>
         </div>
-        <div className={`text-xs md:text-sm truncate ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>
+        <div
+          className={`text-xs md:text-sm truncate ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}
+          data-testid="lesson-title"
+        >
           <span className="hidden sm:inline">第{currentLesson.chapter}章 </span>
           <span className="truncate">{currentLesson.title}</span>
         </div>
@@ -36,13 +42,22 @@ export const NavigationBar = memo(function NavigationBar({ currentLesson, progre
       {/* 右侧：进度、主题切换、用户 */}
       <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
         {/* 进度 - 桌面端显示详细，移动端显示简洁 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-testid="progress-container">
           <div className={`text-xs md:text-sm hidden md:block ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>学习进度</div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <div className={`w-16 md:w-32 h-1.5 md:h-2 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-border' : 'bg-gray-300'}`}>
-              <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progress}%` }} />
+              <div
+                className="h-full bg-primary transition-all duration-300"
+                style={{ width: `${progress}%` }}
+                data-testid="progress-bar"
+              />
             </div>
-            <span className={`text-xs md:text-sm font-medium ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>{progress}%</span>
+            <span
+              className={`text-xs md:text-sm font-medium ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}
+              data-testid="progress-text"
+            >
+              {progress}%
+            </span>
           </div>
         </div>
 
@@ -56,6 +71,7 @@ export const NavigationBar = memo(function NavigationBar({ currentLesson, progre
           }`}
           title={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
           aria-label={theme === 'dark' ? '切换到亮色主题' : '切换到暗色主题'}
+          data-testid="theme-toggle"
         >
           {theme === 'dark' ? (
             <Sun className="h-3.5 w-3.5 md:h-4 md:w-4 text-text-secondary transition-transform hover:rotate-180 duration-300" />

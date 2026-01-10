@@ -67,9 +67,30 @@ export function useChatMessages(lessonId: string, code: string) {
       setChatMessages(prev => [...prev, aiMessage]);
     } catch (error) {
       logger.error('发送消息失败', error);
+
+      // 详细的错误信息
+      let errorContent = '抱歉，我现在无法回复。\n\n';
+
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          errorContent += '**原因**：无法连接到AI服务\n\n';
+          errorContent += '**可能的解决方案**：\n';
+          errorContent += '1. 检查后端服务是否运行\n';
+          errorContent += '2. 确认AI API配置是否正确\n';
+          errorContent += '3. 检查网络连接\n\n';
+        } else if (error.message.includes('timeout')) {
+          errorContent += '**原因**：请求超时\n\n';
+          errorContent += 'AI服务响应时间过长，请稍后重试。\n\n';
+        } else {
+          errorContent += `**错误详情**：${error.message}\n\n`;
+        }
+      }
+
+      errorContent += '💡 **提示**：您可以稍后重新发送消息，或者查阅课程内容继续学习。';
+
       const errorMessage: ChatMessage = {
         role: 'assistant',
-        content: '抱歉，我现在无法回复。请稍后再试。'
+        content: errorContent
       };
       setChatMessages(prev => [...prev, errorMessage]);
     } finally {

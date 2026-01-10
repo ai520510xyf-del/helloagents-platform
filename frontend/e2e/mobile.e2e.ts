@@ -10,14 +10,16 @@ import { wait } from './utils/helpers';
  * - 触摸交互
  * - 移动端特定功能
  * - 不同设备尺寸的兼容性
+ *
+ * 注意：test.use() 必须在 describe 块之外使用
  */
-
-test.use({ ...devices['iPhone 12'] });
 
 test.describe('移动端 - iPhone 12', () => {
   let learnPage: LearnPage;
 
   test.beforeEach(async ({ page }) => {
+    // 设置 iPhone 12 视口尺寸
+    await page.setViewportSize({ width: 390, height: 844 });
     learnPage = new LearnPage(page);
     await learnPage.goto();
   });
@@ -114,11 +116,11 @@ test.describe('移动端 - iPhone 12', () => {
 });
 
 test.describe('移动端 - Android (Pixel 5)', () => {
-  test.use({ ...devices['Pixel 5'] });
-
   let learnPage: LearnPage;
 
   test.beforeEach(async ({ page }) => {
+    // 设置 Pixel 5 视口尺寸
+    await page.setViewportSize({ width: 393, height: 851 });
     learnPage = new LearnPage(page);
     await learnPage.goto();
   });
@@ -161,11 +163,11 @@ test.describe('移动端 - Android (Pixel 5)', () => {
 });
 
 test.describe('平板 - iPad Pro', () => {
-  test.use({ ...devices['iPad Pro'] });
-
   let learnPage: LearnPage;
 
   test.beforeEach(async ({ page }) => {
+    // 设置 iPad Pro 视口尺寸
+    await page.setViewportSize({ width: 1024, height: 1366 });
     learnPage = new LearnPage(page);
     await learnPage.goto();
   });
@@ -248,7 +250,10 @@ test.describe('响应式断点测试', () => {
 });
 
 test.describe('移动端交互测试', () => {
-  test.use({ ...devices['iPhone 12'] });
+  test.beforeEach(async ({ page }) => {
+    // 设置 iPhone 12 视口尺寸
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
 
   test('应该支持双指缩放（页面缩放）', async ({ page }) => {
     const learnPage = new LearnPage(page);
@@ -300,7 +305,10 @@ test.describe('移动端交互测试', () => {
 });
 
 test.describe('移动端性能测试', () => {
-  test.use({ ...devices['Pixel 5'] });
+  test.beforeEach(async ({ page }) => {
+    // 设置 Pixel 5 视口尺寸
+    await page.setViewportSize({ width: 393, height: 851 });
+  });
 
   test('移动端页面加载时间应该合理', async ({ page }) => {
     const startTime = Date.now();
@@ -331,7 +339,10 @@ test.describe('移动端性能测试', () => {
 });
 
 test.describe('移动端可访问性', () => {
-  test.use({ ...devices['iPhone 12'] });
+  test.beforeEach(async ({ page }) => {
+    // 设置 iPhone 12 视口尺寸
+    await page.setViewportSize({ width: 390, height: 844 });
+  });
 
   test('移动端应该支持屏幕阅读器', async ({ page }) => {
     const learnPage = new LearnPage(page);
