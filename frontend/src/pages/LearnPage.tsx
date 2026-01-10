@@ -55,6 +55,7 @@ export function LearnPage() {
     setChatInput,
     isChatLoading,
     sendMessage,
+    regenerateMessage,
   } = useChatMessages(currentLesson.id, code);
 
   // 代码执行管理
@@ -163,6 +164,7 @@ export function LearnPage() {
               onChatInputChange={setChatInput}
               isChatLoading={isChatLoading}
               onSendMessage={sendMessage}
+              onRegenerateMessage={regenerateMessage}
               theme={theme}
             />
           </main>
@@ -204,6 +206,7 @@ export function LearnPage() {
               onChatInputChange={setChatInput}
               isChatLoading={isChatLoading}
               onSendMessage={sendMessage}
+              onRegenerateMessage={regenerateMessage}
               theme={theme}
             />
           </main>
@@ -286,6 +289,7 @@ export function LearnPage() {
                     onChatInputChange={setChatInput}
                     isChatLoading={isChatLoading}
                     onSendMessage={sendMessage}
+                    onRegenerateMessage={regenerateMessage}
                   />
                 </Panel>
               </Group>

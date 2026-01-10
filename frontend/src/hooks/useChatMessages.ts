@@ -98,12 +98,87 @@ export function useChatMessages(lessonId: string, code: string) {
     }
   };
 
+  // 重新生成消息
+  const regenerateMessage = async (messageIndex: number) => {
+    // 找到要重新生成的消息
+    const messageToRegenerate = chatMessages[messageIndex];
+    if (!messageToRegenerate || messageToRegenerate.role !== 'assistant') {
+      return;
+    }
+
+    // 找到对应的用户消息（前一条消息）
+    const userMessage = chatMessages[messageIndex - 1];
+    if (!userMessage || userMessage.role !== 'user') {
+      return;
+    }
+
+    setIsChatLoading(true);
+
+    try {
+      // 获取重新生成之前的对话历史（不包含要重新生成的消息）
+      const historyBeforeRegeneration = chatMessages.slice(0, messageIndex);
+
+      // 调用 AI 聊天 API
+      const response = await chatWithAI({
+        message: userMessage.content,
+        conversation_history: historyBeforeRegeneration,
+        lesson_id: lessonId,
+        code: code
+      });
+
+      // 替换 AI 回复
+      const newAiMessage: ChatMessage = {
+        role: 'assistant',
+        content: response.message
+      };
+
+      // 更新消息列表，替换指定位置的消息
+      setChatMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[messageIndex] = newAiMessage;
+        return newMessages;
+      });
+    } catch (error) {
+      logger.error('重新生成消息失败', error);
+
+      // 错误处理
+      let errorContent = '抱歉，重新生成失败。\n\n';
+
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network')) {
+          errorContent += '**原因**：无法连接到AI服务\n\n';
+        } else if (error.message.includes('timeout')) {
+          errorContent += '**原因**：请求超时\n\n';
+        } else {
+          errorContent += `**错误详情**：${error.message}\n\n`;
+        }
+      }
+
+      errorContent += '请稍后重试。';
+
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        content: errorContent
+      };
+
+      // 更新消息列表，替换指定位置的消息
+      setChatMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[messageIndex] = errorMessage;
+        return newMessages;
+      });
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
   return {
     chatMessages,
     chatInput,
     setChatInput,
     isChatLoading,
     sendMessage,
-    setChatMessages
+    setChatMessages,
+    regenerateMessage
   };
 }

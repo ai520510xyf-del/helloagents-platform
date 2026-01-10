@@ -47,6 +47,7 @@ interface MobileLayoutProps {
   onChatInputChange: (input: string) => void;
   isChatLoading: boolean;
   onSendMessage: () => void;
+  onRegenerateMessage: (index: number) => void;
 
   // 主题
   theme: 'light' | 'dark';
@@ -72,6 +73,7 @@ export function MobileLayout({
   onChatInputChange,
   isChatLoading,
   onSendMessage,
+  onRegenerateMessage,
   theme,
 }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<MobileTab>('editor');
@@ -216,6 +218,7 @@ export function MobileLayout({
               onChatInputChange={onChatInputChange}
               isChatLoading={isChatLoading}
               onSendMessage={onSendMessage}
+              onRegenerateMessage={onRegenerateMessage}
             />
           </div>
         )}

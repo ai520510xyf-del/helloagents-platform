@@ -45,6 +45,7 @@ interface TabletLayoutProps {
   onChatInputChange: (input: string) => void;
   isChatLoading: boolean;
   onSendMessage: () => void;
+  onRegenerateMessage: (index: number) => void;
 
   // 主题
   theme: 'light' | 'dark';
@@ -70,6 +71,7 @@ export function TabletLayout({
   onChatInputChange,
   isChatLoading,
   onSendMessage,
+  onRegenerateMessage,
   theme,
 }: TabletLayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -224,6 +226,7 @@ export function TabletLayout({
                 onChatInputChange={onChatInputChange}
                 isChatLoading={isChatLoading}
                 onSendMessage={onSendMessage}
+                onRegenerateMessage={onRegenerateMessage}
               />
             </Panel>
           </Group>

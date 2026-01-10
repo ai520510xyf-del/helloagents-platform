@@ -8,6 +8,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Button } from '../ui/Button';
+import { MessageActions } from './MessageActions';
+import { CodeBlock } from './CodeBlock';
 import { type Lesson } from '../../data/courses';
 import { type ChatMessage } from '../../services/api';
 
@@ -21,6 +23,7 @@ interface ContentPanelProps {
   onChatInputChange: (input: string) => void;
   isChatLoading: boolean;
   onSendMessage: () => void;
+  onRegenerateMessage: (index: number) => void;
 }
 
 export function ContentPanel({
@@ -32,7 +35,8 @@ export function ContentPanel({
   chatInput,
   onChatInputChange,
   isChatLoading,
-  onSendMessage
+  onSendMessage,
+  onRegenerateMessage
 }: ContentPanelProps) {
   return (
     <div className={`h-full flex flex-col border-l ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
@@ -158,44 +162,52 @@ export function ContentPanel({
                       {msg.role === 'user' ? (
                         <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       ) : (
-                        <div className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            rehypePlugins={[rehypeRaw]}
-                            components={{
-                              h1: ({ children }) => <h1 className={`text-lg font-bold mb-2 mt-3 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</h1>,
-                              h2: ({ children }) => <h2 className={`text-base font-semibold mb-2 mt-2 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</h2>,
-                              h3: ({ children }) => <h3 className={`text-sm font-semibold mb-1 mt-2 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</h3>,
-                              p: ({ children }) => <p className={`mb-2 text-sm leading-relaxed ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{children}</p>,
-                              ul: ({ children }) => <ul className={`list-disc list-inside space-y-1 mb-2 text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{children}</ul>,
-                              ol: ({ children }) => <ol className={`list-decimal list-inside space-y-1 mb-2 text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{children}</ol>,
-                              li: ({ children }) => <li className="ml-4">{children}</li>,
-                              code: (props: React.HTMLProps<HTMLElement> & { inline?: boolean }) => {
-                                const { inline, children } = props;
-                                return inline ? (
-                                  <code className={`px-1 py-0.5 rounded text-xs font-mono ${theme === 'dark' ? 'bg-bg-dark text-primary' : 'bg-gray-200 text-primary'}`}>{children}</code>
-                                ) : (
-                                  <code className={`block p-2 rounded overflow-x-auto text-xs font-mono my-1 ${theme === 'dark' ? 'bg-bg-dark text-text-secondary' : 'bg-gray-200 text-gray-800'}`}>{children}</code>
-                                );
-                              },
-                              pre: ({ children }) => <pre className={`p-2 rounded overflow-x-auto mb-2 ${theme === 'dark' ? 'bg-bg-dark' : 'bg-gray-200'}`}>{children}</pre>,
-                              blockquote: ({ children }) => (
-                                <blockquote className={`border-l-2 border-primary pl-2 italic my-2 text-sm ${theme === 'dark' ? 'text-text-muted' : 'text-gray-600'}`}>{children}</blockquote>
-                              ),
-                              table: ({ children }) => <table className="w-full border-collapse my-2 text-sm">{children}</table>,
-                              th: ({ children }) => <th className={`border px-2 py-1 text-left text-xs ${theme === 'dark' ? 'border-border bg-bg-dark text-text-primary' : 'border-gray-300 bg-gray-200 text-gray-900'}`}>{children}</th>,
-                              td: ({ children }) => <td className={`border px-2 py-1 text-xs ${theme === 'dark' ? 'border-border text-text-secondary' : 'border-gray-300 text-gray-700'}`}>{children}</td>,
-                              strong: ({ children }) => <strong className={`font-semibold ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</strong>,
-                              a: ({ children, href }) => (
-                                <a href={href} className="text-primary hover:underline text-sm" target="_blank" rel="noopener noreferrer">
-                                  {children}
-                                </a>
-                              ),
-                            }}
-                          >
-                            {msg.content}
-                          </ReactMarkdown>
-                        </div>
+                        <>
+                          <div className={`prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}>
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
+                              rehypePlugins={[rehypeRaw]}
+                              components={{
+                                h1: ({ children }) => <h1 className={`text-lg font-bold mb-2 mt-3 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</h1>,
+                                h2: ({ children }) => <h2 className={`text-base font-semibold mb-2 mt-2 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</h2>,
+                                h3: ({ children }) => <h3 className={`text-sm font-semibold mb-1 mt-2 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</h3>,
+                                p: ({ children }) => <p className={`mb-2 text-sm leading-relaxed ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{children}</p>,
+                                ul: ({ children }) => <ul className={`list-disc list-inside space-y-1 mb-2 text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{children}</ul>,
+                                ol: ({ children }) => <ol className={`list-decimal list-inside space-y-1 mb-2 text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-700'}`}>{children}</ol>,
+                                li: ({ children }) => <li className="ml-4">{children}</li>,
+                                code: (props: React.HTMLProps<HTMLElement> & { inline?: boolean }) => {
+                                  const { inline, children, className } = props;
+                                  return (
+                                    <CodeBlock inline={inline} className={className} theme={theme}>
+                                      {children}
+                                    </CodeBlock>
+                                  );
+                                },
+                                pre: ({ children }) => <>{children}</>,
+                                blockquote: ({ children }) => (
+                                  <blockquote className={`border-l-2 border-primary pl-2 italic my-2 text-sm ${theme === 'dark' ? 'text-text-muted' : 'text-gray-600'}`}>{children}</blockquote>
+                                ),
+                                table: ({ children }) => <table className="w-full border-collapse my-2 text-sm">{children}</table>,
+                                th: ({ children }) => <th className={`border px-2 py-1 text-left text-xs ${theme === 'dark' ? 'border-border bg-bg-dark text-text-primary' : 'border-gray-300 bg-gray-200 text-gray-900'}`}>{children}</th>,
+                                td: ({ children }) => <td className={`border px-2 py-1 text-xs ${theme === 'dark' ? 'border-border text-text-secondary' : 'border-gray-300 text-gray-700'}`}>{children}</td>,
+                                strong: ({ children }) => <strong className={`font-semibold ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}>{children}</strong>,
+                                a: ({ children, href }) => (
+                                  <a href={href} className="text-primary hover:underline text-sm" target="_blank" rel="noopener noreferrer">
+                                    {children}
+                                  </a>
+                                ),
+                              }}
+                            >
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                          <MessageActions
+                            content={msg.content}
+                            onRegenerate={() => onRegenerateMessage(index)}
+                            isRegenerating={isChatLoading}
+                            theme={theme}
+                          />
+                        </>
                       )}
                     </div>
                     {msg.role === 'user' && (
