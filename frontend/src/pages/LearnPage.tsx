@@ -46,6 +46,7 @@ export function LearnPage() {
   const [code, setCode] = useState(loadCodeFromStorage(currentLesson.id));
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [activeTab, setActiveTab] = useState<'content' | 'ai'>('content');
+  const [isCodeEditorCollapsed, setIsCodeEditorCollapsed] = useState(false);
 
   // 聊天消息管理
   const {
@@ -80,6 +81,11 @@ export function LearnPage() {
   // 切换主题 - 使用 useCallback 稳定引用
   const toggleTheme = useCallback(() => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  }, []);
+
+  // 切换代码编辑器折叠状态
+  const toggleCodeEditorCollapse = useCallback(() => {
+    setIsCodeEditorCollapsed(prev => !prev);
   }, []);
 
   // 切换课程 - 使用 useCallback 稳定引用
@@ -221,75 +227,87 @@ export function LearnPage() {
           onToggleTheme={toggleTheme}
         />
 
-        {/* 主内容区 */}
+        {/* 主内容区 - 使用垂直可调整布局 */}
         <main style={{ marginTop: '0.5rem', height: 'calc(100vh - 0.5rem - 70px)' }}>
-          {/* 上半部分：三栏布局 */}
-          <div style={{ height: '70%' }}>
-            {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
-            <Group direction="horizontal">
-              {/* 左侧：课程目录 */}
-              <Panel defaultSize={20} minSize={15} style={{ height: '100%', overflow: 'auto' }}>
-                <CourseMenu
-                  currentLesson={currentLesson}
-                  theme={theme}
-                  onLessonChange={handleLessonChange}
-                />
-              </Panel>
+          {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
+          <Group direction="vertical">
+            {/* 上半部分：三栏布局 */}
+            <Panel defaultSize={70} minSize={30}>
+              {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
+              <Group direction="horizontal">
+                {/* 左侧：课程目录 */}
+                <Panel defaultSize={20} minSize={15} style={{ height: '100%', overflow: 'auto' }}>
+                  <CourseMenu
+                    currentLesson={currentLesson}
+                    theme={theme}
+                    onLessonChange={handleLessonChange}
+                  />
+                </Panel>
 
-              <Separator className={`w-1 transition-colors ${
-                theme === 'dark'
-                  ? 'bg-gray-700 hover:bg-blue-400'
-                  : 'bg-gray-300 hover:bg-blue-500'
-              }`} />
+                <Separator className={`w-1 transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 hover:bg-blue-400'
+                    : 'bg-gray-300 hover:bg-blue-500'
+                }`} />
 
-              {/* 中间：代码编辑器 */}
-              <Panel defaultSize={50} minSize={380} style={{ height: '100%', overflow: 'auto' }}>
-                <CodeEditorPanel
-                  code={code}
-                  onCodeChange={handleCodeChange}
-                  cursorPosition={cursorPosition}
-                  onCursorChange={handleCursorChange}
-                  currentLesson={currentLesson}
-                  theme={theme}
-                  isRunning={isRunning}
-                  onRun={handleRunCode}
-                  onStop={stopExecution}
-                  onReset={handleReset}
-                />
-              </Panel>
+                {/* 中间：代码编辑器 */}
+                <Panel defaultSize={50} minSize={isCodeEditorCollapsed ? 5 : 30} maxSize={isCodeEditorCollapsed ? 5 : 70} style={{ height: '100%', overflow: 'auto' }}>
+                  <CodeEditorPanel
+                    code={code}
+                    onCodeChange={handleCodeChange}
+                    cursorPosition={cursorPosition}
+                    onCursorChange={handleCursorChange}
+                    currentLesson={currentLesson}
+                    theme={theme}
+                    isRunning={isRunning}
+                    onRun={handleRunCode}
+                    onStop={stopExecution}
+                    onReset={handleReset}
+                    isCollapsed={isCodeEditorCollapsed}
+                    onToggleCollapse={toggleCodeEditorCollapse}
+                  />
+                </Panel>
 
-              <Separator className={`w-1 transition-colors ${
-                theme === 'dark'
-                  ? 'bg-gray-700 hover:bg-blue-400'
-                  : 'bg-gray-300 hover:bg-blue-500'
-              }`} />
+                <Separator className={`w-1 transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-gray-700 hover:bg-blue-400'
+                    : 'bg-gray-300 hover:bg-blue-500'
+                }`} />
 
-              {/* 右侧：课程内容 + AI 助手 */}
-              <Panel defaultSize={30} minSize={20} style={{ height: '100%', overflow: 'auto' }}>
-                <ContentPanel
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  currentLesson={currentLesson}
-                  theme={theme}
-                  chatMessages={chatMessages}
-                  chatInput={chatInput}
-                  onChatInputChange={setChatInput}
-                  isChatLoading={isChatLoading}
-                  onSendMessage={sendMessage}
-                />
-              </Panel>
-            </Group>
-          </div>
+                {/* 右侧：课程内容 + AI 助手 */}
+                <Panel defaultSize={30} minSize={20} style={{ height: '100%', overflow: 'auto' }}>
+                  <ContentPanel
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    currentLesson={currentLesson}
+                    theme={theme}
+                    chatMessages={chatMessages}
+                    chatInput={chatInput}
+                    onChatInputChange={setChatInput}
+                    isChatLoading={isChatLoading}
+                    onSendMessage={sendMessage}
+                  />
+                </Panel>
+              </Group>
+            </Panel>
 
-          {/* 下半部分：终端输出 */}
-          <div style={{ height: '30%' }}>
-            <TerminalOutput
-              output={output}
-              isRunning={isRunning}
-              theme={theme}
-              onClear={clearOutput}
-            />
-          </div>
+            {/* 可拖动的水平分割线 */}
+            <Separator className={`h-1 transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-700 hover:bg-blue-400'
+                : 'bg-gray-300 hover:bg-blue-500'
+            }`} />
+
+            {/* 下半部分：终端输出 */}
+            <Panel defaultSize={30} minSize={15}>
+              <TerminalOutput
+                output={output}
+                isRunning={isRunning}
+                theme={theme}
+                onClear={clearOutput}
+              />
+            </Panel>
+          </Group>
         </main>
       </div>
     </>

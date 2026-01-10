@@ -14,7 +14,7 @@
  */
 
 import { memo, useEffect } from 'react';
-import { Play, StopCircle, RotateCcw } from 'lucide-react';
+import { Play, StopCircle, RotateCcw, ChevronRight, ChevronLeft } from 'lucide-react';
 import { LazyCodeEditor } from '../LazyCodeEditor';
 import { Button } from '../ui/Button';
 import { type Lesson } from '../../data/courses';
@@ -30,6 +30,8 @@ interface CodeEditorPanelProps {
   onRun: () => void;
   onStop: () => void;
   onReset: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const CodeEditorPanel = memo(function CodeEditorPanel({
@@ -42,7 +44,9 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
   isRunning,
   onRun,
   onStop,
-  onReset
+  onReset,
+  isCollapsed = false,
+  onToggleCollapse
 }: CodeEditorPanelProps) {
   // 键盘快捷键支持
   useEffect(() => {
@@ -89,7 +93,7 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
 
       {/* 文件标签栏 */}
       <div
-        className={`h-10 border-b flex items-center px-4 gap-2 ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-100 border-gray-200'}`}
+        className={`h-10 border-b flex items-center px-4 gap-2 justify-between ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-100 border-gray-200'}`}
         role="tablist"
         aria-label="代码文件标签"
       >
@@ -101,77 +105,100 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
         >
           <span>lesson_{currentLesson.id.replace('.', '_')}.py</span>
         </div>
+
+        {/* 最小化/展开按钮 */}
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className={`p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${theme === 'dark' ? 'text-text-muted hover:text-text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+            aria-label={isCollapsed ? "展开代码编辑器" : "最小化代码编辑器"}
+            title={isCollapsed ? "展开" : "最小化"}
+          >
+            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
-      {/* Monaco Editor (Lazy Loaded) */}
-      <div
-        className="overflow-hidden min-h-0"
-        role="region"
-        aria-label="代码编辑区域"
-      >
-        <LazyCodeEditor
-          value={code}
-          onChange={(value) => onCodeChange(value || '')}
-          onCursorChange={onCursorChange}
-          language="python"
-          height="100%"
-          theme={theme}
-        />
-      </div>
+      {/* Monaco Editor (Lazy Loaded) - 仅在未折叠时显示 */}
+      {!isCollapsed && (
+        <>
+          <div
+            className="overflow-hidden min-h-0"
+            role="region"
+            aria-label="代码编辑区域"
+          >
+            <LazyCodeEditor
+              value={code}
+              onChange={(value) => onCodeChange(value || '')}
+              onCursorChange={onCursorChange}
+              language="python"
+              height="100%"
+              theme={theme}
+            />
+          </div>
 
-      {/* 操作栏 */}
-      <div
-        className={`h-14 border-t flex items-center justify-between px-4 ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-100 border-gray-200'}`}
-        role="toolbar"
-        aria-label="代码操作工具栏"
-      >
-        <div className="flex items-center gap-2" role="group" aria-label="代码执行控制">
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={onRun}
-            isLoading={isRunning}
-            disabled={isRunning}
-            data-testid="run-button"
-            aria-label={isRunning ? "代码运行中" : "运行代码"}
+          {/* 操作栏 */}
+          <div
+            className={`h-14 border-t flex items-center justify-between px-4 ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-100 border-gray-200'}`}
+            role="toolbar"
+            aria-label="代码操作工具栏"
           >
-            <Play className="h-4 w-4 mr-1" aria-hidden="true" />
-            运行代码
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onStop}
-            disabled={!isRunning}
-            data-testid="stop-button"
-            aria-label="停止代码执行"
-          >
-            <StopCircle className="h-4 w-4 mr-1" aria-hidden="true" />
-            停止
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onReset}
-            className={theme === 'dark' ? '' : 'border-gray-300 hover:bg-gray-100 text-gray-700'}
-            data-testid="reset-button"
-            aria-label="重置代码到初始状态"
-          >
-            <RotateCcw className="h-4 w-4 mr-1" aria-hidden="true" />
-            重置
-          </Button>
+            <div className="flex items-center gap-2" role="group" aria-label="代码执行控制">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onRun}
+                isLoading={isRunning}
+                disabled={isRunning}
+                data-testid="run-button"
+                aria-label={isRunning ? "代码运行中" : "运行代码"}
+              >
+                <Play className="h-4 w-4 mr-1" aria-hidden="true" />
+                运行代码
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={onStop}
+                disabled={!isRunning}
+                data-testid="stop-button"
+                aria-label="停止代码执行"
+              >
+                <StopCircle className="h-4 w-4 mr-1" aria-hidden="true" />
+                停止
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onReset}
+                className={theme === 'dark' ? '' : 'border-gray-300 hover:bg-gray-100 text-gray-700'}
+                data-testid="reset-button"
+                aria-label="重置代码到初始状态"
+              >
+                <RotateCcw className="h-4 w-4 mr-1" aria-hidden="true" />
+                重置
+              </Button>
+            </div>
+
+            <div
+              className={`text-xs ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`}
+              data-testid="cursor-position"
+              role="status"
+              aria-live="polite"
+              aria-label={`光标位置：第 ${cursorPosition.line} 行，第 ${cursorPosition.column} 列`}
+            >
+              行 {cursorPosition.line}, 列 {cursorPosition.column}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* 折叠状态提示 */}
+      {isCollapsed && (
+        <div className={`flex-1 flex items-center justify-center ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`}>
+          <p className="text-sm">点击右上角按钮展开代码编辑器</p>
         </div>
-
-        <div
-          className={`text-xs ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`}
-          data-testid="cursor-position"
-          role="status"
-          aria-live="polite"
-          aria-label={`光标位置：第 ${cursorPosition.line} 行，第 ${cursorPosition.column} 列`}
-        >
-          行 {cursorPosition.line}, 列 {cursorPosition.column}
-        </div>
-      </div>
+      )}
     </div>
   );
 }, (prevProps, nextProps) => {
