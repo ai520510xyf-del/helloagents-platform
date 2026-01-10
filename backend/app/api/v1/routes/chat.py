@@ -4,20 +4,24 @@ AI 聊天助手 API (v1)
 提供与 AI 学习助手的对话功能
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import Optional, List
 import os
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from openai import OpenAI
 
 from app.database import get_db
 from app.logger import get_logger
+from app.api.response_models import success_response, error_response
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+limiter = Limiter(key_func=get_remote_address)
 
 # DeepSeek 客户端延迟初始化
 _deepseek_client = None
@@ -81,10 +85,12 @@ class ChatResponse(BaseModel):
 # API 端点
 # ============================================
 
-@router.post("", response_model=ChatResponse)
-@router.post("/", response_model=ChatResponse, include_in_schema=False)
+@router.post("")
+@router.post("/", include_in_schema=False)
+@limiter.limit("20/minute")
 async def chat_with_ai(
-    request: ChatRequest,
+    request_obj: Request,
+    chat_request: ChatRequest,
     user_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
@@ -93,15 +99,26 @@ async def chat_with_ai(
 
     提供课程学习过程中的问答支持，可选保存聊天消息到数据库
 
+    **速率限制:** 20次/分钟
+
     **请求参数:**
     - message: 用户消息（必填）
     - conversation_history: 对话历史（可选，最多保留最近10轮）
     - lesson_id: 当前课程ID（可选，用于提供上下文）
     - code: 当前代码（可选，用于提供上下文）
 
-    **响应:**
-    - message: AI 助手的回复
-    - success: 请求是否成功
+    **响应格式:**
+    ```json
+    {
+        "success": true,
+        "data": {
+            "message": "AI助手回复",
+            "model": "deepseek-chat",
+            "tokens": 150
+        },
+        "timestamp": "2024-01-08T10:00:00Z"
+    }
+    ```
     """
     try:
         # 构建系统提示
@@ -119,12 +136,12 @@ async def chat_with_ai(
 - 当学习者提供代码时，帮助他们理解和改进"""
 
         # 添加当前课程上下文
-        if request.lesson_id:
-            system_prompt += f"\n\n当前学习章节：第{request.lesson_id}章"
+        if chat_request.lesson_id:
+            system_prompt += f"\n\n当前学习章节：第{chat_request.lesson_id}章"
 
         # 添加当前代码上下文
-        if request.code and len(request.code.strip()) > 0:
-            system_prompt += f"\n\n学习者当前的代码：\n```python\n{request.code[:1000]}\n```"
+        if chat_request.code and len(chat_request.code.strip()) > 0:
+            system_prompt += f"\n\n学习者当前的代码：\n```python\n{chat_request.code[:1000]}\n```"
 
         # 构建消息历史 (OpenAI 格式)
         messages = [
@@ -132,7 +149,7 @@ async def chat_with_ai(
         ]
 
         # 添加对话历史（只保留最近10轮对话）
-        for msg in request.conversation_history[-10:]:
+        for msg in chat_request.conversation_history[-10:]:
             messages.append({
                 "role": msg.role,
                 "content": msg.content
@@ -141,17 +158,17 @@ async def chat_with_ai(
         # 添加当前用户消息
         messages.append({
             "role": "user",
-            "content": request.message
+            "content": chat_request.message
         })
 
         # 记录 AI 调用开始
         logger.info(
             "ai_chat_started",
             user_id=user_id,
-            lesson_id=request.lesson_id,
-            message_length=len(request.message),
-            has_code_context=bool(request.code),
-            conversation_history_length=len(request.conversation_history)
+            lesson_id=chat_request.lesson_id,
+            message_length=len(chat_request.message),
+            has_code_context=bool(chat_request.code),
+            conversation_history_length=len(chat_request.conversation_history)
         )
 
         # 调用 DeepSeek API
@@ -167,13 +184,14 @@ async def chat_with_ai(
         assistant_message = response.choices[0].message.content
 
         # 记录 AI 调用完成
+        total_tokens = response.usage.total_tokens if hasattr(response, 'usage') else None
         logger.info(
             "ai_chat_completed",
             user_id=user_id,
-            lesson_id=request.lesson_id,
+            lesson_id=chat_request.lesson_id,
             response_length=len(assistant_message),
             model="deepseek-chat",
-            total_tokens=response.usage.total_tokens if hasattr(response, 'usage') else None
+            total_tokens=total_tokens
         )
 
         # 保存聊天记录到数据库（如果提供了 user_id）
@@ -183,9 +201,9 @@ async def chat_with_ai(
 
             # 解析 lesson_id
             lesson_id_int = None
-            if request.lesson_id:
+            if chat_request.lesson_id:
                 try:
-                    lesson_id_int = int(request.lesson_id)
+                    lesson_id_int = int(chat_request.lesson_id)
                 except:
                     pass
 
@@ -194,7 +212,7 @@ async def chat_with_ai(
                 user_id=user_id,
                 lesson_id=lesson_id_int,
                 role='user',
-                content=request.message,
+                content=chat_request.message,
                 extra_data=json.dumps({})
             )
             db.add(user_msg)
@@ -207,27 +225,34 @@ async def chat_with_ai(
                 content=assistant_message,
                 extra_data=json.dumps({
                     'model': 'deepseek-chat',
-                    'tokens': response.usage.total_tokens if hasattr(response, 'usage') else None
+                    'tokens': total_tokens
                 })
             )
             db.add(assistant_msg)
             db.commit()
 
-        return ChatResponse(
-            message=assistant_message,
-            success=True
+        # 返回统一格式的成功响应
+        return success_response(
+            data={
+                "message": assistant_message,
+                "model": "deepseek-chat",
+                "tokens": total_tokens
+            },
+            message="AI助手回复成功"
         )
 
     except Exception as e:
         logger.error(
             "ai_chat_failed",
             user_id=user_id,
-            lesson_id=request.lesson_id,
+            lesson_id=chat_request.lesson_id,
             error=str(e),
             error_type=type(e).__name__,
             exc_info=True
         )
-        return ChatResponse(
+        # 返回统一格式的错误响应
+        return error_response(
+            code="AI_CHAT_ERROR",
             message="抱歉，AI 助手暂时无法回复。请稍后再试。",
-            success=False
+            details={"error_type": type(e).__name__}
         )

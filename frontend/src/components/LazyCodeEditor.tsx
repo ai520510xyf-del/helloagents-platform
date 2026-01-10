@@ -141,7 +141,7 @@ function CodeEditorSkeleton({ theme = 'dark', isMobile = false }: { theme?: 'lig
  */
 export function LazyCodeEditor(props: CodeEditorProps) {
   const [useFullEditor, setUseFullEditor] = useState(false);
-  const [autoUpgradeTimer, setAutoUpgradeTimer] = useState<NodeJS.Timeout | null>(null);
+  const [autoUpgradeTimer, setAutoUpgradeTimer] = useState<number | null>(null);
   const isMobile = isMobileDevice();
   const networkQuality = getNetworkQuality();
 

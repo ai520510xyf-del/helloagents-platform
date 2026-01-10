@@ -71,7 +71,12 @@
     </style>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- 跳转链接 - 改善键盘导航 -->
+    <a href="#main-content" class="sr-only sr-only-focusable" style="position: absolute; top: 0; left: 0; padding: 1rem; background: #3B82F6; color: white; z-index: 9999;">
+      跳转到主内容
+    </a>
+
+    <div id="root" role="application" aria-label="HelloAgents 学习平台"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

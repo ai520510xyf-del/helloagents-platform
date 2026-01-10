@@ -14,6 +14,7 @@ openai==1.59.5
 # 日志和监控
 structlog==24.4.0
 sentry-sdk==2.19.2
+prometheus-client==0.21.1
 
 # 测试依赖
 pytest==8.3.4

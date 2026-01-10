@@ -75,11 +75,102 @@ limiter = Limiter(key_func=get_remote_address)
 # 创建 FastAPI 应用
 app = FastAPI(
     title="HelloAgents Learning Platform API",
-    description="AI Agent 互动学习平台后端服务",
+    description="""
+    # HelloAgents 学习平台 API
+
+    AI Agent 互动学习平台后端服务，提供代码执行沙箱、AI 助手对话、课程内容管理等功能。
+
+    ## 主要特性
+
+    - **代码执行沙箱**: 安全的 Docker 容器环境，支持 Python 代码执行
+    - **AI 学习助手**: 基于 DeepSeek 的智能问答助手
+    - **课程管理**: 结构化的课程内容和代码模板
+    - **速率限制**: 防止滥用的智能限流机制
+
+    ## API 版本
+
+    当前版本: **v1**
+
+    所有 API 端点均以 `/api/v1` 为前缀。
+
+    ## 认证
+
+    当前版本的 API 不需要认证（开发阶段）。
+
+    ## 速率限制
+
+    不同端点有不同的速率限制：
+    - AI 聊天: 20次/分钟
+    - 代码执行: 30次/分钟
+    - AI 提示: 60次/分钟
+    - 课程查询: 100次/分钟
+
+    ## 响应格式
+
+    所有 API 响应遵循统一格式：
+
+    **成功响应**:
+    ```json
+    {
+        "success": true,
+        "data": {...},
+        "message": "操作成功",
+        "timestamp": "2024-01-08T10:00:00Z"
+    }
+    ```
+
+    **错误响应**:
+    ```json
+    {
+        "success": false,
+        "error": {
+            "code": "ERROR_CODE",
+            "message": "错误描述",
+            "details": {...}
+        },
+        "timestamp": "2024-01-08T10:00:00Z"
+    }
+    ```
+
+    ## HTTP 状态码
+
+    - `200 OK`: 请求成功
+    - `400 Bad Request`: 请求参数错误
+    - `404 Not Found`: 资源不存在
+    - `422 Unprocessable Entity`: 验证失败
+    - `429 Too Many Requests`: 超过速率限制
+    - `500 Internal Server Error`: 服务器内部错误
+    """,
     version="1.0.0",
     openapi_url="/api/v1/openapi.json",
     docs_url="/api/v1/docs",
-    redoc_url="/api/v1/redoc"
+    redoc_url="/api/v1/redoc",
+    openapi_tags=[
+        {
+            "name": "chat",
+            "description": "AI 聊天助手相关接口"
+        },
+        {
+            "name": "code",
+            "description": "代码执行和智能提示相关接口"
+        },
+        {
+            "name": "lessons",
+            "description": "课程内容管理相关接口"
+        },
+        {
+            "name": "sandbox",
+            "description": "沙箱容器池管理相关接口"
+        }
+    ],
+    contact={
+        "name": "HelloAgents Team",
+        "url": "https://github.com/yourusername/helloagents-platform"
+    },
+    license_info={
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT"
+    }
 )
 
 # 将速率限制器绑定到 app
@@ -123,12 +214,16 @@ from app.middleware.logging_middleware import (
 )
 from app.middleware.error_handler import ErrorHandlerMiddleware
 from app.middleware.version_middleware import APIVersionMiddleware
+from app.middleware.prometheus_middleware import PrometheusMiddleware
 
 # 错误处理中间件 (最先添加，最后执行，确保能捕获所有错误)
 app.add_middleware(ErrorHandlerMiddleware)
 
 # 版本控制中间件
 app.add_middleware(APIVersionMiddleware, default_version="v1")
+
+# Prometheus 指标收集中间件
+app.add_middleware(PrometheusMiddleware)
 
 # 日志中间件
 app.add_middleware(ErrorLoggingMiddleware)
@@ -347,6 +442,22 @@ async def root():
         "version": "1.0.0",
         "timestamp": datetime.now().isoformat()
     }
+
+@app.get("/metrics")
+async def metrics():
+    """
+    Prometheus 指标端点
+
+    导出应用性能和业务指标供 Prometheus 抓取
+    """
+    from app.middleware.prometheus_middleware import get_metrics
+    from starlette.responses import Response
+
+    metrics_data = get_metrics()
+    return Response(
+        content=metrics_data,
+        media_type="text/plain; version=0.0.4; charset=utf-8"
+    )
 
 @app.get("/health")
 async def health_check():
