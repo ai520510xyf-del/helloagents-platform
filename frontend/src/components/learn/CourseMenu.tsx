@@ -8,13 +8,15 @@
  */
 
 import { memo } from 'react';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { allChapters, type Lesson } from '../../data/courses';
 
 interface CourseMenuProps {
   currentLesson: Lesson;
   theme: 'light' | 'dark';
   onLessonChange: (lessonId: string) => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 // 获取状态图标
@@ -27,45 +29,93 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-export const CourseMenu = memo(function CourseMenu({ currentLesson, theme, onLessonChange }: CourseMenuProps) {
+export const CourseMenu = memo(function CourseMenu({
+  currentLesson,
+  theme,
+  onLessonChange,
+  isCollapsed = false,
+  onToggleCollapse
+}: CourseMenuProps) {
   return (
     <div className={`h-full overflow-y-auto border-r custom-scrollbar ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`} data-testid="course-menu">
       <div className="p-4">
-        <div className="flex items-center gap-2 text-sm font-semibold mb-4">
-          <BookOpen className="h-4 w-4" />
-          <span>课程目录</span>
+        <div className="flex items-center gap-2 text-sm font-semibold mb-4 justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            {!isCollapsed && <span>课程目录</span>}
+          </div>
+          {onToggleCollapse && (
+            <button
+              onClick={onToggleCollapse}
+              className={`p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 transition-colors ${theme === 'dark' ? 'text-text-muted hover:text-text-primary' : 'text-gray-500 hover:text-gray-700'}`}
+              aria-label={isCollapsed ? "展开课程目录" : "折叠课程目录"}
+              title={isCollapsed ? "展开" : "折叠"}
+            >
+              {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
+          )}
         </div>
 
-        <nav className="space-y-1" role="navigation">
-          {allChapters.map((chapter, chapterIndex) => (
-            <div key={chapter.id}>
-              {chapterIndex > 0 && <div className="h-4" />}
-              <div className={`text-xs mb-2 ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`} data-testid="course-category">
-                第{chapter.id}章 {chapter.title}
-              </div>
-              {chapter.lessons.map((lesson) => {
-                const isCurrent = currentLesson.id === lesson.id;
+        {!isCollapsed ? (
+          <nav className="space-y-1" role="navigation">
+            {allChapters.map((chapter, chapterIndex) => (
+              <div key={chapter.id}>
+                {chapterIndex > 0 && <div className="h-4" />}
+                <div className={`text-xs mb-2 ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`} data-testid="course-category">
+                  第{chapter.id}章 {chapter.title}
+                </div>
+                {chapter.lessons.map((lesson) => {
+                  const isCurrent = currentLesson.id === lesson.id;
 
-                return (
-                  <button
-                    key={lesson.id}
-                    onClick={() => onLessonChange(lesson.id)}
-                    className={`
-                      w-full text-left px-3 py-2 text-sm rounded transition-colors cursor-pointer
-                      ${isCurrent
-                        ? 'bg-primary/10 border-l-2 border-primary' + (theme === 'dark' ? ' text-text-primary' : ' text-gray-900')
-                        : (theme === 'dark' ? 'hover:bg-bg-elevated text-text-secondary' : 'hover:bg-gray-200 text-gray-700')}
-                    `}
-                    data-testid="course-item"
-                    aria-current={isCurrent ? 'page' : undefined}
-                  >
-                    {getStatusIcon(lesson.status)} {lesson.id} {lesson.title}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => onLessonChange(lesson.id)}
+                      className={`
+                        w-full text-left px-3 py-2 text-sm rounded transition-colors cursor-pointer
+                        ${isCurrent
+                          ? 'bg-primary/10 border-l-2 border-primary' + (theme === 'dark' ? ' text-text-primary' : ' text-gray-900')
+                          : (theme === 'dark' ? 'hover:bg-bg-elevated text-text-secondary' : 'hover:bg-gray-200 text-gray-700')}
+                      `}
+                      data-testid="course-item"
+                      aria-current={isCurrent ? 'page' : undefined}
+                    >
+                      {getStatusIcon(lesson.status)} {lesson.id} {lesson.title}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+        ) : (
+          // 折叠状态：显示章节图标
+          <nav className="space-y-2" role="navigation">
+            {allChapters.map((chapter) => (
+              <div key={chapter.id} className="space-y-1">
+                {chapter.lessons.map((lesson) => {
+                  const isCurrent = currentLesson.id === lesson.id;
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => onLessonChange(lesson.id)}
+                      className={`
+                        w-full px-2 py-2 text-xs rounded transition-colors cursor-pointer flex items-center justify-center
+                        ${isCurrent
+                          ? 'bg-primary/10 border-l-2 border-primary' + (theme === 'dark' ? ' text-text-primary' : ' text-gray-900')
+                          : (theme === 'dark' ? 'hover:bg-bg-elevated text-text-secondary' : 'hover:bg-gray-200 text-gray-700')}
+                      `}
+                      data-testid="course-item-collapsed"
+                      aria-current={isCurrent ? 'page' : undefined}
+                      title={`${lesson.id} ${lesson.title}`}
+                    >
+                      {getStatusIcon(lesson.status)}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </nav>
+        )}
       </div>
     </div>
   );

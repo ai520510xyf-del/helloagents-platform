@@ -24,6 +24,7 @@ interface ContentPanelProps {
   isChatLoading: boolean;
   onSendMessage: () => void;
   onRegenerateMessage: (index: number) => void;
+  isContentLoading?: boolean;
 }
 
 export function ContentPanel({
@@ -36,7 +37,8 @@ export function ContentPanel({
   onChatInputChange,
   isChatLoading,
   onSendMessage,
-  onRegenerateMessage
+  onRegenerateMessage,
+  isContentLoading = false
 }: ContentPanelProps) {
   return (
     <div className={`h-full flex flex-col border-l ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
@@ -79,9 +81,16 @@ export function ContentPanel({
       {/* 内容区域 */}
       <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
         {activeTab === 'content' ? (
-          /* 课程内容 */
-          <div className={`p-6 prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`} data-testid="content-panel">
-            <ReactMarkdown
+          isContentLoading ? (
+            /* 加载中状态 */
+            <div className="flex flex-col items-center justify-center h-full">
+              <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mb-4"></div>
+              <p className={`text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>加载课程内容中...</p>
+            </div>
+          ) : (
+            /* 课程内容 */
+            <div className={`p-6 prose prose-sm max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`} data-testid="content-panel">
+              <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeRaw]}
               components={{
@@ -117,7 +126,8 @@ export function ContentPanel({
             >
               {currentLesson.content || '# 加载中...\n\n正在加载课程内容...'}
             </ReactMarkdown>
-          </div>
+            </div>
+          )
         ) : (
           /* AI 助手 - 聊天界面 */
           <div className="h-full flex flex-col" data-testid="ai-chat">

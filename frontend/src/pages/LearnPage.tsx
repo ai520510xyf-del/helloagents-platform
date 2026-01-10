@@ -47,6 +47,8 @@ export function LearnPage() {
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [activeTab, setActiveTab] = useState<'content' | 'ai'>('content');
   const [isCodeEditorCollapsed, setIsCodeEditorCollapsed] = useState(false);
+  const [isCourseMenuCollapsed, setIsCourseMenuCollapsed] = useState(false);
+  const [isLessonLoading, setIsLessonLoading] = useState(false);
 
   // 聊天消息管理
   const {
@@ -89,16 +91,26 @@ export function LearnPage() {
     setIsCodeEditorCollapsed(prev => !prev);
   }, []);
 
+  // 切换课程菜单折叠状态
+  const toggleCourseMenuCollapse = useCallback(() => {
+    setIsCourseMenuCollapsed(prev => !prev);
+  }, []);
+
   // 切换课程 - 使用 useCallback 稳定引用
   const handleLessonChange = useCallback(async (lessonId: string) => {
-    await changeLesson(lessonId);
+    setIsLessonLoading(true);
+    try {
+      await changeLesson(lessonId);
 
-    // 从本地缓存加载该课程的代码和聊天历史
-    const savedCode = loadCodeFromStorage(lessonId);
-    setCode(savedCode);
+      // 从本地缓存加载该课程的代码和聊天历史
+      const savedCode = loadCodeFromStorage(lessonId);
+      setCode(savedCode);
 
-    // 重置其他状态
-    clearOutput();
+      // 重置其他状态
+      clearOutput();
+    } finally {
+      setIsLessonLoading(false);
+    }
   }, [changeLesson, clearOutput]);
 
   // 重置代码 - 使用 useCallback 稳定引用
@@ -239,11 +251,13 @@ export function LearnPage() {
               {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
               <Group direction="horizontal">
                 {/* 左侧：课程目录 */}
-                <Panel defaultSize={20} minSize={15} style={{ height: '100%', overflow: 'auto' }}>
+                <Panel defaultSize={20} minSize={isCourseMenuCollapsed ? 5 : 15} maxSize={isCourseMenuCollapsed ? 5 : 25} style={{ height: '100%', overflow: 'auto' }}>
                   <CourseMenu
                     currentLesson={currentLesson}
                     theme={theme}
                     onLessonChange={handleLessonChange}
+                    isCollapsed={isCourseMenuCollapsed}
+                    onToggleCollapse={toggleCourseMenuCollapse}
                   />
                 </Panel>
 
@@ -290,6 +304,7 @@ export function LearnPage() {
                     isChatLoading={isChatLoading}
                     onSendMessage={sendMessage}
                     onRegenerateMessage={regenerateMessage}
+                    isContentLoading={isLessonLoading}
                   />
                 </Panel>
               </Group>
