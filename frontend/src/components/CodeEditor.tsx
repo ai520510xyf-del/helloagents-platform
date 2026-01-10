@@ -38,7 +38,7 @@ export function CodeEditor({
     configureMonacoEnvironment(monaco);
 
     // 按需加载语言支持
-    loadLanguageSupport(language).catch(error => {
+    loadLanguageSupport(language).catch((error: unknown) => {
       console.error('[Monaco] Failed to load language support:', error);
     });
 
