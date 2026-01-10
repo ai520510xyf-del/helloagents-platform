@@ -3,15 +3,72 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+
     <!-- 移动端优化视口设置 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, viewport-fit=cover, user-scalable=yes" />
+
     <!-- PWA支持 -->
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <!-- 描述 -->
-    <meta name="description" content="HelloAgents - 交互式 Agent 开发学习平台" />
+    <meta name="description" content="HelloAgents - 交互式 Agent 开发学习平台，支持实时代码编辑和 AI 助手" />
+    <meta name="keywords" content="Agent开发,Python学习,交互式编程,AI助手,编程教育" />
+    <meta name="author" content="HelloAgents Team" />
     <title>HelloAgents - Agent 开发学习平台</title>
+
+    <!-- 可访问性增强 -->
+    <meta name="theme-color" content="#3B82F6" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- 性能优化: DNS预解析和预连接 -->
+    <link rel="preconnect" href="https://helloagents-platform.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://helloagents-platform.onrender.com" />
+
+    <!-- 性能优化: 字体加载优化 -->
+    <style>
+      /* 优化字体加载，避免FOIT (Flash of Invisible Text) */
+      @font-face {
+        font-display: swap; /* 立即使用备用字体，字体加载后切换 */
+      }
+
+      /* 关键CSS - 减少首屏渲染阻塞 */
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      #root {
+        min-height: 100vh;
+      }
+
+      /* 加载骨架屏样式 - 改善感知性能 */
+      .app-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .app-loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

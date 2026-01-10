@@ -34,10 +34,10 @@ export default {
         },
 
         text: {
-          primary: '#F8FAFC',      // 提高对比度
-          secondary: '#CBD5E1',    // 提高可读性
-          muted: '#94A3B8',       // 适度的灰色
-          disabled: '#64748B',
+          primary: '#F8FAFC',      // 对比度 16:1 ✅
+          secondary: '#E2E8F0',    // 对比度 11:1 ✅ (从 CBD5E1 提升)
+          muted: '#94A3B8',        // 对比度 5.2:1 ✅
+          disabled: '#94A3B8',     // 对比度 5.2:1 ✅ (从 64748B 提升)
         },
 
         border: {
@@ -55,10 +55,10 @@ export default {
         },
 
         'text-light': {
-          primary: '#0F172A',
-          secondary: '#475569',
-          muted: '#64748B',
-          disabled: '#94A3B8',
+          primary: '#0F172A',      // 对比度 16:1 ✅
+          secondary: '#475569',    // 对比度 7.1:1 ✅
+          muted: '#64748B',        // 对比度 4.9:1 ✅
+          disabled: '#64748B',     // 对比度 4.9:1 ✅ (从 94A3B8 提升)
         },
 
         'border-light': {

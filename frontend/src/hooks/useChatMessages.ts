@@ -5,28 +5,18 @@
 
 import { useState, useEffect } from 'react';
 import { chatWithAI, type ChatMessage } from '../services/api';
-
-const CHAT_STORAGE_PREFIX = 'helloagents_lesson_chat_';
+import { chatStorage } from '../utils/storage';
+import { logger } from '../utils/logger';
 
 export function useChatMessages(lessonId: string, code: string) {
   // 从本地存储加载聊天历史
   const loadChatFromStorage = (id: string): ChatMessage[] => {
-    try {
-      const savedChat = localStorage.getItem(CHAT_STORAGE_PREFIX + id);
-      return savedChat ? JSON.parse(savedChat) : [];
-    } catch (error) {
-      console.error('加载聊天历史失败:', error);
-      return [];
-    }
+    return chatStorage.get<ChatMessage[]>(`${id}_history`, []) || [];
   };
 
   // 保存聊天历史到本地存储
   const saveChatToStorage = (id: string, messages: ChatMessage[]) => {
-    try {
-      localStorage.setItem(CHAT_STORAGE_PREFIX + id, JSON.stringify(messages));
-    } catch (error) {
-      console.error('保存聊天历史失败:', error);
-    }
+    chatStorage.set(`${id}_history`, messages);
   };
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(loadChatFromStorage(lessonId));
@@ -76,7 +66,7 @@ export function useChatMessages(lessonId: string, code: string) {
       };
       setChatMessages(prev => [...prev, aiMessage]);
     } catch (error) {
-      console.error('发送消息失败:', error);
+      logger.error('发送消息失败', error);
       const errorMessage: ChatMessage = {
         role: 'assistant',
         content: '抱歉，我现在无法回复。请稍后再试。'

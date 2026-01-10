@@ -1,0 +1,311 @@
+# ===================================================================
+# HelloAgents Platform 告警规则
+# ===================================================================
+
+groups:
+  # ========================================
+  # 可用性告警
+  # ========================================
+  - name: availability
+    interval: 30s
+    rules:
+      # Critical: 服务不可用
+      - alert: ServiceDown
+        expr: up{job="helloagents-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+          category: availability
+        annotations:
+          summary: "HelloAgents 后端服务不可用"
+          description: "服务 {{ $labels.instance }} 已停机超过 2 分钟"
+          runbook_url: "https://docs.helloagents.com/runbooks/service-down"
+
+      # Critical: 高错误率
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="helloagents-backend",status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="helloagents-backend"}[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+          category: availability
+        annotations:
+          summary: "API 错误率过高"
+          description: "5xx 错误率为 {{ $value | humanizePercentage }} (阈值: 5%)"
+          runbook_url: "https://docs.helloagents.com/runbooks/high-error-rate"
+
+      # Warning: 中等错误率
+      - alert: MediumErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="helloagents-backend",status_code=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job="helloagents-backend"}[5m]))
+          ) > 0.01
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+          category: availability
+        annotations:
+          summary: "API 错误率上升"
+          description: "5xx 错误率为 {{ $value | humanizePercentage }} (阈值: 1%)"
+
+  # ========================================
+  # 性能告警
+  # ========================================
+  - name: performance
+    interval: 30s
+    rules:
+      # Warning: 高延迟
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="helloagents-backend"}[5m])) by (le, endpoint)
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+          category: performance
+        annotations:
+          summary: "API 响应时间过高"
+          description: "端点 {{ $labels.endpoint }} 的 P95 延迟为 {{ $value }}s (阈值: 0.5s)"
+          runbook_url: "https://docs.helloagents.com/runbooks/high-latency"
+
+      # Critical: 极高延迟
+      - alert: VeryHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket{job="helloagents-backend"}[5m])) by (le, endpoint)
+          ) > 2.0
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+          category: performance
+        annotations:
+          summary: "API 响应时间极高"
+          description: "端点 {{ $labels.endpoint }} 的 P95 延迟为 {{ $value }}s (阈值: 2.0s)"
+
+      # Warning: 高并发请求
+      - alert: HighConcurrentRequests
+        expr: sum(http_requests_in_progress{job="helloagents-backend"}) > 100
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+          category: performance
+        annotations:
+          summary: "并发请求数过高"
+          description: "当前有 {{ $value }} 个并发请求 (阈值: 100)"
+
+  # ========================================
+  # 沙箱告警
+  # ========================================
+  - name: sandbox
+    interval: 30s
+    rules:
+      # Warning: 沙箱执行缓慢
+      - alert: SlowSandboxExecution
+        expr: |
+          histogram_quantile(0.95,
+            rate(sandbox_execution_duration_seconds_bucket[5m])
+          ) > 10
+        for: 10m
+        labels:
+          severity: warning
+          component: sandbox
+          category: performance
+        annotations:
+          summary: "代码沙箱执行缓慢"
+          description: "P95 执行时间为 {{ $value }}s (阈值: 10s)"
+
+      # Warning: 沙箱高错误率
+      - alert: HighSandboxErrorRate
+        expr: |
+          (
+            sum(rate(sandbox_executions_total{status="error"}[5m]))
+            /
+            sum(rate(sandbox_executions_total[5m]))
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: sandbox
+          category: reliability
+        annotations:
+          summary: "沙箱执行错误率过高"
+          description: "错误率为 {{ $value | humanizePercentage }} (阈值: 10%)"
+
+      # Warning: 容器池资源不足
+      - alert: SandboxPoolDepleted
+        expr: sandbox_pool_available < 2
+        for: 5m
+        labels:
+          severity: warning
+          component: sandbox
+          category: capacity
+        annotations:
+          summary: "沙箱容器池资源不足"
+          description: "可用容器数仅剩 {{ $value }} 个 (阈值: 2)"
+
+  # ========================================
+  # AI 服务告警
+  # ========================================
+  - name: ai_service
+    interval: 30s
+    rules:
+      # Warning: AI 响应时间过长
+      - alert: SlowAIResponse
+        expr: |
+          histogram_quantile(0.95,
+            rate(ai_chat_duration_seconds_bucket[5m])
+          ) > 15
+        for: 10m
+        labels:
+          severity: warning
+          component: ai_service
+          category: performance
+        annotations:
+          summary: "AI 助手响应时间过长"
+          description: "P95 响应时间为 {{ $value }}s (阈值: 15s)"
+
+      # Warning: AI 错误率上升
+      - alert: AIServiceErrors
+        expr: |
+          (
+            sum(rate(ai_chat_requests_total{status="error"}[5m]))
+            /
+            sum(rate(ai_chat_requests_total[5m]))
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: ai_service
+          category: reliability
+        annotations:
+          summary: "AI 助手错误率上升"
+          description: "错误率为 {{ $value | humanizePercentage }} (阈值: 10%)"
+
+      # Info: AI Token 消耗异常
+      - alert: HighAITokenConsumption
+        expr: rate(ai_chat_tokens_total[1h]) > 10000
+        for: 30m
+        labels:
+          severity: info
+          component: ai_service
+          category: cost
+        annotations:
+          summary: "AI Token 消耗异常增长"
+          description: "最近 1 小时消耗了 {{ $value }} tokens"
+
+  # ========================================
+  # 数据库告警
+  # ========================================
+  - name: database
+    interval: 30s
+    rules:
+      # Warning: 数据库查询慢
+      - alert: SlowDatabaseQueries
+        expr: |
+          histogram_quantile(0.95,
+            rate(db_query_duration_seconds_bucket[5m])
+          ) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+          category: performance
+        annotations:
+          summary: "数据库查询响应时间过长"
+          description: "P95 查询时间为 {{ $value }}s (阈值: 0.1s)"
+
+      # Warning: 数据库连接数过高
+      - alert: HighDatabaseConnections
+        expr: db_connections_active > 50
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+          category: capacity
+        annotations:
+          summary: "数据库连接数过高"
+          description: "当前活跃连接数为 {{ $value }} (阈值: 50)"
+
+  # ========================================
+  # 资源告警
+  # ========================================
+  - name: resources
+    interval: 30s
+    rules:
+      # Warning: 高内存使用
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            process_resident_memory_bytes{job="helloagents-backend"}
+            /
+            (1024 * 1024 * 1024)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+          category: resources
+        annotations:
+          summary: "内存使用过高"
+          description: "内存使用量为 {{ $value }}GB (阈值: 2GB)"
+
+      # Warning: 高 CPU 使用
+      - alert: HighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total{job="helloagents-backend"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: infrastructure
+          category: resources
+        annotations:
+          summary: "CPU 使用率过高"
+          description: "CPU 使用率为 {{ $value }}% (阈值: 80%)"
+
+      # Warning: 文件描述符不足
+      - alert: HighFileDescriptorUsage
+        expr: |
+          (
+            process_open_fds{job="helloagents-backend"}
+            /
+            process_max_fds{job="helloagents-backend"}
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+          category: resources
+        annotations:
+          summary: "文件描述符使用率过高"
+          description: "使用率为 {{ $value | humanizePercentage }} (阈值: 80%)"
+
+  # ========================================
+  # 健康检查告警
+  # ========================================
+  - name: health_checks
+    interval: 30s
+    rules:
+      # Critical: 组件不健康
+      - alert: ComponentUnhealthy
+        expr: app_health_status == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: health
+        annotations:
+          summary: "组件 {{ $labels.component }} 不健康"
+          description: "组件已处于不健康状态超过 2 分钟"
+          runbook_url: "https://docs.helloagents.com/runbooks/component-unhealthy"

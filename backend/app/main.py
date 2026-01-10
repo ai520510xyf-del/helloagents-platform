@@ -19,6 +19,9 @@ from dotenv import load_dotenv
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 # 加载 .env 文件中的环境变量
 load_dotenv()
@@ -66,6 +69,9 @@ from app.routers import users, progress, submissions, chat, migrate
 from app.api.v1 import api_router as api_v1_router
 from app.api.version import router as version_router
 
+# 初始化速率限制器
+limiter = Limiter(key_func=get_remote_address)
+
 # 创建 FastAPI 应用
 app = FastAPI(
     title="HelloAgents Learning Platform API",
@@ -75,6 +81,10 @@ app = FastAPI(
     docs_url="/api/v1/docs",
     redoc_url="/api/v1/redoc"
 )
+
+# 将速率限制器绑定到 app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # DeepSeek 客户端延迟初始化
 _deepseek_client = None

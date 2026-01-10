@@ -120,7 +120,14 @@ export default defineConfig({
     ],
     exclude: [
       'monaco-editor', // Monaco 已经过优化，不需要预构建
+      '@monaco-editor/react', // Monaco React 包装器也排除
     ],
+  },
+
+  // Monaco Editor 优化配置
+  define: {
+    // 只加载需要的语言，减少 Monaco Worker 体积
+    'process.env.MONACO_LANGUAGES': JSON.stringify(['python']),
   },
 
   // Vitest 测试配置

@@ -60,11 +60,14 @@ export function Button({
     <button
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      aria-disabled={disabled || isLoading}
       {...props}
     >
       {isLoading ? (
         <>
-          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" aria-hidden="true" />
+          <span className="sr-only">正在处理请求，请稍候</span>
           加载中...
         </>
       ) : (

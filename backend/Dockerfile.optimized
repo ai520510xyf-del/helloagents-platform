@@ -1,0 +1,132 @@
+# ===================================================================
+# Multi-stage Dockerfile for HelloAgents Backend (FastAPI)
+# Optimized for: Production, Security, Performance, Small Image Size
+# ===================================================================
+
+# Stage 1: Builder - Install dependencies and compile
+FROM python:3.11-slim AS builder
+
+LABEL stage=builder
+LABEL description="Build stage for Python dependencies"
+
+WORKDIR /app
+
+# Install system dependencies required for building Python packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy only requirements to leverage Docker cache
+COPY requirements.txt .
+
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv && \
+    . /opt/venv/bin/activate && \
+    pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Stage 2: Production - Create minimal runtime image
+FROM python:3.11-slim AS production
+
+LABEL maintainer="HelloAgents Team <team@helloagents.com>"
+LABEL description="HelloAgents Platform Backend - Production"
+LABEL version="1.0.0"
+LABEL org.opencontainers.image.source="https://github.com/ai520510xyf-del/helloagents-platform"
+
+WORKDIR /app
+
+# Install only runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    ca-certificates \
+    libpq5 \
+    tini \
+    && rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+
+# Set environment variables
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app \
+    PYTHONHASHSEED=random \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Create non-root user for security
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -u 1001 appuser && \
+    mkdir -p /app/logs /app/data /app/tmp && \
+    chown -R appuser:appuser /app
+
+# Copy application code with correct ownership
+COPY --chown=appuser:appuser . .
+
+# Create .env file if not exists (for local development)
+RUN touch .env && chown appuser:appuser .env
+
+# Switch to non-root user
+USER appuser
+
+# Expose port
+EXPOSE 8000
+
+# Health check - 使用 /health/live 进行存活检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/health/live || exit 1
+
+# Use tini to handle signals properly
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+# Run the application with optimized settings
+# - workers: 4 (adjust based on CPU cores)
+# - timeout-keep-alive: 65 (slightly higher than typical load balancer timeout)
+# - log-level: info
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "4", \
+     "--timeout-keep-alive", "65", \
+     "--log-level", "info", \
+     "--no-access-log"]
+
+# Stage 3: Development - For local development with hot reload
+FROM production AS development
+
+LABEL environment="development"
+
+USER root
+
+# Install development dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    git \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install development Python packages
+RUN . /opt/venv/bin/activate && \
+    pip install --no-cache-dir \
+    pytest \
+    pytest-cov \
+    pytest-asyncio \
+    black \
+    ruff \
+    mypy \
+    ipython
+
+USER appuser
+
+# Override CMD for development with hot reload
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--reload", \
+     "--log-level", "debug"]

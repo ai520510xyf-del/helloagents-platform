@@ -3,6 +3,7 @@ import Editor from '@monaco-editor/react';
 import type { OnMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { helloAgentsDarkTheme, defaultEditorOptions } from '../lib/monacoTheme';
+import { configureMonacoEnvironment, loadLanguageSupport, logMonacoPerformance } from '../lib/monacoConfig';
 
 export interface CodeEditorProps {
   value: string;
@@ -33,6 +34,14 @@ export function CodeEditor({
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
 
+    // 配置 Monaco 环境（优化 Worker 加载）
+    configureMonacoEnvironment(monaco);
+
+    // 按需加载语言支持
+    loadLanguageSupport(language).catch(error => {
+      console.error('[Monaco] Failed to load language support:', error);
+    });
+
     // 定义自定义暗色主题
     monaco.editor.defineTheme('helloagents-dark', helloAgentsDarkTheme);
 
@@ -57,6 +66,11 @@ export function CodeEditor({
 
     // 标记编辑器已准备就绪
     setIsEditorReady(true);
+
+    // 记录性能指标（开发环境）
+    if (import.meta.env.DEV) {
+      logMonacoPerformance();
+    }
   };
 
   // 动态切换主题

@@ -1,0 +1,50 @@
+{
+  "test_date": "2026-01-09T20:22:05.342222",
+  "frontend_url": "https://helloagents-platform.pages.dev",
+  "backend_url": "https://helloagents-platform.onrender.com",
+  "tests": {
+    "backend_api": {
+      "status": "success",
+      "endpoints": [
+        {
+          "name": "Health Check",
+          "path": "/health",
+          "error": "HTTPSConnectionPool(host='helloagents-platform.onrender.com', port=443): Read timed out. (read timeout=10)"
+        },
+        {
+          "name": "Readiness Check",
+          "path": "/health/ready",
+          "status_code": 503,
+          "avg_time_ms": 362.71,
+          "p50_ms": 293.22,
+          "p95_ms": 662.65,
+          "p99_ms": 665.17,
+          "min_ms": 253.82,
+          "max_ms": 660.08
+        },
+        {
+          "name": "Liveness Check",
+          "path": "/health/live",
+          "status_code": 200,
+          "avg_time_ms": 325.8,
+          "p50_ms": 279.7,
+          "p95_ms": 771.92,
+          "p99_ms": 885.13,
+          "min_ms": 251.72,
+          "max_ms": 656.14
+        },
+        {
+          "name": "Get Lessons",
+          "path": "/api/lessons",
+          "status_code": 200,
+          "avg_time_ms": 350.6,
+          "p50_ms": 284.17,
+          "p95_ms": 827.48,
+          "p99_ms": 919.42,
+          "min_ms": 249.79,
+          "max_ms": 733.46
+        }
+      ]
+    }
+  }
+}

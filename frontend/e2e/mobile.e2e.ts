@@ -12,9 +12,9 @@ import { wait } from './utils/helpers';
  * - 不同设备尺寸的兼容性
  */
 
-test.describe('移动端 - iPhone 12', () => {
-  test.use({ ...devices['iPhone 12'] });
+test.use({ ...devices['iPhone 12'] });
 
+test.describe('移动端 - iPhone 12', () => {
   let learnPage: LearnPage;
 
   test.beforeEach(async ({ page }) => {

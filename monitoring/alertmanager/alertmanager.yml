@@ -1,0 +1,202 @@
+# ===================================================================
+# Alertmanager 配置文件
+# HelloAgents Platform 告警路由和通知配置
+# ===================================================================
+
+global:
+  resolve_timeout: 5m
+
+  # Slack 配置 (需要配置 Webhook URL)
+  # slack_api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK/URL'
+
+# 告警模板
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# 告警路由配置
+route:
+  # 默认接收器
+  receiver: 'default'
+
+  # 分组配置
+  group_by: ['alertname', 'severity', 'component']
+  group_wait: 10s        # 等待 10 秒收集同组告警
+  group_interval: 10s    # 每 10 秒评估一次分组
+  repeat_interval: 12h   # 12 小时后重复发送未解决的告警
+
+  # 路由规则
+  routes:
+    # Critical 告警路由
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 5s
+      repeat_interval: 1h
+      continue: true  # 继续匹配其他路由
+
+    # Critical 告警同时发送到 Slack
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      group_wait: 5s
+
+    # Warning 告警路由
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      repeat_interval: 4h
+
+    # Info 告警路由
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      repeat_interval: 24h
+
+    # 按组件路由
+    - match:
+        component: database
+      receiver: 'database-team'
+
+    - match:
+        component: sandbox
+      receiver: 'devops-team'
+
+# 抑制规则 (Inhibition Rules)
+inhibit_rules:
+  # 如果服务完全不可用,抑制其他所有告警
+  - source_match:
+      alertname: 'ServiceDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['instance', 'job']
+
+  # 如果有 Critical 告警,抑制同组件的 Warning 告警
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['component']
+
+  # 如果错误率高,抑制延迟告警
+  - source_match:
+      alertname: 'HighErrorRate'
+    target_match:
+      alertname: 'HighLatency'
+    equal: ['instance']
+
+# 接收器配置
+receivers:
+  # 默认接收器 (控制台日志)
+  - name: 'default'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook'
+        send_resolved: true
+
+  # Critical 告警接收器
+  - name: 'critical-alerts'
+    # Email 配置示例
+    # email_configs:
+    #   - to: 'oncall@helloagents.com'
+    #     from: 'alertmanager@helloagents.com'
+    #     smarthost: 'smtp.gmail.com:587'
+    #     auth_username: 'your-email@gmail.com'
+    #     auth_identity: 'your-email@gmail.com'
+    #     auth_password: 'your-app-password'
+    #     headers:
+    #       Subject: '🚨 [CRITICAL] {{ .GroupLabels.alertname }}'
+
+    # PagerDuty 配置示例
+    # pagerduty_configs:
+    #   - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+    #     description: '{{ .GroupLabels.alertname }}: {{ .CommonAnnotations.summary }}'
+
+    # Webhook 配置
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/critical'
+        send_resolved: true
+
+  # Slack Critical 告警
+  - name: 'slack-critical'
+    # slack_configs:
+    #   - channel: '#incidents'
+    #     color: 'danger'
+    #     title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+    #     text: |
+    #       {{ range .Alerts }}
+    #       *Summary:* {{ .Annotations.summary }}
+    #       *Description:* {{ .Annotations.description }}
+    #       *Component:* {{ .Labels.component }}
+    #       {{ if .Annotations.runbook_url }}*Runbook:* {{ .Annotations.runbook_url }}{{ end }}
+    #       {{ end }}
+    #     actions:
+    #       - type: button
+    #         text: 'View in Grafana'
+    #         url: 'http://localhost:3000'
+    #       - type: button
+    #         text: 'Silence'
+    #         url: 'http://localhost:9093/#/silences/new'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/slack-critical'
+
+  # Warning 告警接收器
+  - name: 'warning-alerts'
+    # slack_configs:
+    #   - channel: '#alerts'
+    #     color: 'warning'
+    #     title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+    #     text: |
+    #       {{ range .Alerts }}
+    #       *Summary:* {{ .Annotations.summary }}
+    #       *Description:* {{ .Annotations.description }}
+    #       {{ end }}
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/warning'
+
+  # Info 告警接收器
+  - name: 'info-alerts'
+    # slack_configs:
+    #   - channel: '#monitoring'
+    #     color: 'good'
+    #     title: 'ℹ️ INFO: {{ .GroupLabels.alertname }}'
+    #     text: '{{ .CommonAnnotations.summary }}'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/info'
+
+  # 数据库团队接收器
+  - name: 'database-team'
+    # email_configs:
+    #   - to: 'database-team@helloagents.com'
+    #     from: 'alertmanager@helloagents.com'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/database-team'
+
+  # DevOps 团队接收器
+  - name: 'devops-team'
+    # email_configs:
+    #   - to: 'devops@helloagents.com'
+    #     from: 'alertmanager@helloagents.com'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook/devops-team'
+
+# ===================================================================
+# 配置说明:
+#
+# 1. Slack 集成:
+#    - 创建 Slack Incoming Webhook
+#    - 将 webhook URL 配置到 global.slack_api_url
+#    - 取消注释 slack_configs 部分
+#
+# 2. Email 集成:
+#    - 配置 SMTP 服务器信息
+#    - 取消注释 email_configs 部分
+#    - 如使用 Gmail,需要生成 App Password
+#
+# 3. PagerDuty 集成:
+#    - 创建 PagerDuty Service
+#    - 获取 Service Integration Key
+#    - 取消注释 pagerduty_configs 部分
+#
+# 4. 自定义 Webhook:
+#    - 实现接收告警的 HTTP 端点
+#    - 配置 webhook_configs
+# ===================================================================

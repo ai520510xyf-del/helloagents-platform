@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# HelloAgents Platform - Health Check Script
-# This script performs comprehensive health checks
+# ===================================================================
+# HelloAgents Platform - Comprehensive Health Check Script
+# Purpose: Verify that all services are healthy after deployment
+# Usage: ./health-check.sh [-e staging|production]
+# ===================================================================
 
 set -e  # Exit on error
 set -o pipefail  # Exit on pipe failure
@@ -10,10 +13,13 @@ set -o pipefail  # Exit on pipe failure
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
 ENVIRONMENT="${ENVIRONMENT:-staging}"
+TIMEOUT=10
+MAX_RETRIES=3
 
 # Functions
 log_info() {

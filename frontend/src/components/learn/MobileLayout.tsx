@@ -11,7 +11,7 @@
 import { useState, useCallback } from 'react';
 import { Menu, Code, BookOpen, Terminal, Play, StopCircle, RotateCcw } from 'lucide-react';
 import { CourseMenu } from './CourseMenu';
-import { CodeEditor } from '../CodeEditor';
+import { LazyCodeEditor } from '../LazyCodeEditor';
 import { ContentPanel } from './ContentPanel';
 import { TerminalOutput } from './TerminalOutput';
 import { Button } from '../ui/Button';
@@ -148,9 +148,9 @@ export function MobileLayout({
               </div>
             </div>
 
-            {/* Monaco Editor */}
+            {/* Monaco Editor (Lazy Loaded) */}
             <div className="flex-1 min-h-0">
-              <CodeEditor
+              <LazyCodeEditor
                 value={code}
                 onChange={(value) => onCodeChange(value || '')}
                 onCursorChange={onCursorChange}

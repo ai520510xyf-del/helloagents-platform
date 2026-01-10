@@ -12,7 +12,7 @@ import { useState, useCallback } from 'react';
 import { Menu, X, ChevronUp, ChevronDown, Play, StopCircle, RotateCcw } from 'lucide-react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import { CourseMenu } from './CourseMenu';
-import { CodeEditor } from '../CodeEditor';
+import { LazyCodeEditor } from '../LazyCodeEditor';
 import { ContentPanel } from './ContentPanel';
 import { Button } from '../ui/Button';
 import { type Lesson } from '../../data/courses';
@@ -149,9 +149,9 @@ export function TabletLayout({
                   </div>
                 </div>
 
-                {/* Monaco Editor */}
+                {/* Monaco Editor (Lazy Loaded) */}
                 <div className="flex-1 min-h-0">
-                  <CodeEditor
+                  <LazyCodeEditor
                     value={code}
                     onChange={(value) => onCodeChange(value || '')}
                     onCursorChange={onCursorChange}

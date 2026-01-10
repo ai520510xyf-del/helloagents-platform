@@ -1,0 +1,17 @@
+# ===================================================================
+# Grafana 仪表板配置
+# 自动加载仪表板文件
+# ===================================================================
+
+apiVersion: 1
+
+providers:
+  - name: 'HelloAgents Dashboards'
+    orgId: 1
+    folder: 'HelloAgents'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

@@ -18,7 +18,12 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:firefox": "playwright test --project=firefox",
-    "test:e2e:report": "playwright show-report playwright-report"
+    "test:e2e:report": "playwright show-report playwright-report",
+    "perf:test": "node scripts/lighthouse-test.js http://localhost:4173",
+    "perf:test:mobile": "node scripts/lighthouse-test.js http://localhost:4173 --mobile",
+    "perf:test:desktop": "node scripts/lighthouse-test.js http://localhost:4173 --desktop",
+    "perf:test:json": "node scripts/lighthouse-test.js http://localhost:4173 --json",
+    "perf:analyze": "vite build && open dist/stats.html"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

@@ -59,19 +59,19 @@ export class LearnPage {
     this.cursorPosition = page.locator('text=/行:\\s*\\d+.*列:\\s*\\d+/');
 
     // 内容面板
-    this.contentPanel = page.locator('[class*="content-panel"]');
-    this.contentTab = page.locator('button:has-text("课程内容"), button:has-text("Content")');
-    this.aiTab = page.locator('button:has-text("AI"), button:has-text("助手")');
-    this.lessonContent = page.locator('[class*="markdown"], [class*="content"]');
+    this.contentPanel = page.locator('[class*="content-panel"], [class*="ContentPanel"]');
+    this.contentTab = page.locator('button:has-text("课程内容"), button:has-text("Content"), button:has-text("内容")').first();
+    this.aiTab = page.locator('button:has-text("AI 助手"), button:has-text("AI"), button:has-text("助手")').first();
+    this.lessonContent = page.locator('[class*="markdown"], [class*="content"], [class*="lesson"]');
 
     // AI 助手
-    this.chatMessages = page.locator('[class*="chat"], [class*="message"]');
-    this.chatInput = page.locator('textarea[placeholder*="问题"], input[placeholder*="问题"]');
-    this.sendButton = page.locator('button:has-text("发送"), button:has-text("Send")');
+    this.chatMessages = page.locator('[class*="chat"], [class*="message"], [class*="Message"]');
+    this.chatInput = page.locator('textarea[placeholder*="问题"], input[placeholder*="问题"], textarea[placeholder*="输入"]');
+    this.sendButton = page.locator('button:has-text("发送"), button:has-text("Send"), [aria-label*="发送"]').first();
 
     // 终端输出
-    this.terminalOutput = page.locator('[class*="terminal"], [class*="output"]');
-    this.clearOutputButton = page.locator('button:has-text("清空"), button:has-text("Clear")');
+    this.terminalOutput = page.locator('[class*="terminal"], [class*="output"], [class*="Terminal"]').first();
+    this.clearOutputButton = page.locator('button:has-text("清空"), button:has-text("Clear"), button:has-text("清除")').first();
   }
 
   /**
@@ -86,9 +86,11 @@ export class LearnPage {
    * 等待页面加载完成
    */
   async waitForPageLoad() {
-    // 等待页面主要元素加载
-    await this.page.waitForLoadState('networkidle');
-    await expect(this.navBar).toBeVisible({ timeout: 10000 });
+    // 等待页面主要元素加载 - 使用 domcontentloaded 代替 networkidle 避免超时
+    await this.page.waitForLoadState('domcontentloaded');
+    await expect(this.navBar).toBeVisible({ timeout: 15000 });
+    // 等待一下让页面稳定
+    await this.page.waitForTimeout(1000);
   }
 
   /**

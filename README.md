@@ -104,7 +104,22 @@ npm run dev
 
 ---
 
+## 📚 完整文档
+
+| 文档 | 描述 |
+|------|------|
+| **[📖 文档中心](./docs/README.md)** | 完整的文档索引和导航 |
+| **[👤 用户手册](./docs/USER_GUIDE.md)** | 平台功能详解、学习路径、使用技巧 |
+| **[💻 开发者指南](./docs/DEVELOPER_GUIDE.md)** | 本地环境搭建、开发流程、调试技巧 |
+| **[🔌 API 参考](./docs/API.md)** | 完整的 REST API 接口说明和示例 |
+| **[🏗️ 架构文档](./docs/ARCHITECTURE.md)** | 系统架构、技术栈、数据模型、设计决策 |
+| **[🚀 部署指南](./docs/DEPLOYMENT.md)** | 生产环境部署、环境变量、故障排查 |
+| **[🤝 贡献指南](./docs/CONTRIBUTING.md)** | 代码贡献流程、代码规范、PR 指南 |
+| **[❓ 常见问题 FAQ](./FAQ.md)** | 问题排查、解决方案、技巧提示 |
+
 ## 📝 常见问题
+
+更多问题请查看 **[FAQ 文档](./FAQ.md)**。
 
 ### 为什么需要 Docker？
 Docker 用于创建安全隔离的代码执行环境，确保你的代码不会影响系统安全。
@@ -158,6 +173,62 @@ AI 助手需要配置 DeepSeek API Key：
 
 ---
 
+## 🔧 DevOps & 监控
+
+### 健康检查端点
+
+后端提供多层次的健康检查端点：
+
+| 端点 | 用途 | 说明 |
+|------|------|------|
+| `/health` | 完整健康检查 | 检查 API、数据库、沙箱池、AI 服务 |
+| `/health/ready` | 就绪检查 | 用于 Kubernetes Readiness Probe |
+| `/health/live` | 存活检查 | 用于 Kubernetes Liveness Probe |
+
+示例：
+```bash
+curl https://helloagents-backend.onrender.com/health
+```
+
+### 部署脚本
+
+项目包含自动化部署验证脚本：
+
+```bash
+# 健康检查
+export BACKEND_URL=https://your-backend.onrender.com
+export FRONTEND_URL=https://your-frontend.pages.dev
+./scripts/deployment/health-check.sh
+
+# 烟雾测试
+./scripts/deployment/smoke-test.sh
+```
+
+### 监控和日志
+
+- **错误追踪**: Sentry 集成（需配置 `SENTRY_DSN`）
+- **性能监控**: 自动追踪 API 响应时间和慢请求
+- **日志系统**: 结构化日志（JSON 格式）
+- **告警配置**: 支持 Slack/Email 通知
+
+详细配置请参考：
+- [部署指南](./DEPLOYMENT.md) - 环境变量、部署流程、安全检查
+- [监控配置指南](./MONITORING.md) - Sentry 配置、日志查看、告警设置
+- [DevOps 总结](./DEVOPS_SUMMARY.md) - 优化工作总览
+
+### CI/CD
+
+GitHub Actions 自动化流程：
+- ✅ 代码 Lint 检查（Ruff, ESLint）
+- ✅ 单元测试 + 集成测试
+- ✅ 代码覆盖率报告（Codecov）
+- ✅ Docker 镜像构建
+- ✅ 自动部署（main 分支）
+
+查看 CI 状态：[![CI Tests](https://github.com/ai520510xyf-del/helloagents-platform/workflows/CI%20-%20Test%20Suite/badge.svg)](https://github.com/ai520510xyf-del/helloagents-platform/actions)
+
+---
+
 ## 🤝 贡献
 
 欢迎贡献代码、课程内容或提出改进建议！
@@ -166,6 +237,12 @@ AI 助手需要配置 DeepSeek API Key：
 2. 创建功能分支
 3. 提交你的修改
 4. 创建 Pull Request
+
+**开发规范**：
+- 遵循代码风格（使用 Ruff/Black 格式化）
+- 编写单元测试（覆盖率 > 80%）
+- 更新文档和注释
+- 通过所有 CI 检查
 
 ---
 
@@ -179,7 +256,8 @@ MIT License - 详见 LICENSE 文件
 
 - **项目主页**: https://github.com/ai520510xyf-del/helloagents-platform
 - **问题反馈**: https://github.com/ai520510xyf-del/helloagents-platform/issues
-- **在线文档**: https://github.com/ai520510xyf-del/helloagents-platform/wiki
+- **讨论社区**: https://github.com/ai520510xyf-del/helloagents-platform/discussions
+- **在线访问**: https://helloagents-platform.pages.dev
 
 ---
 

@@ -1,11 +1,17 @@
 /**
  * useLesson Hook
  * 管理课程状态和切换逻辑
+ *
+ * 性能优化:
+ * - 使用 IndexedDB 缓存课程内容
+ * - 优先从缓存读取，减少网络请求
+ * - 后台更新缓存，确保内容新鲜
  */
 
 import { useState, useEffect } from 'react';
 import { findLessonById, type Lesson } from '../data/courses';
 import { getLessonContent } from '../services/api';
+import { cacheManager } from '../utils/cache';
 
 const LAST_LESSON_ID_KEY = 'helloagents_last_lesson_id';
 
@@ -30,14 +36,19 @@ export function useLesson() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 页面加载时从后端获取当前课程内容
+  // 页面加载时从缓存或后端获取当前课程内容
   useEffect(() => {
     const loadInitialLesson = async () => {
       if (currentLesson) {
         try {
           setIsLoading(true);
           localStorage.setItem(LAST_LESSON_ID_KEY, currentLesson.id);
-          const lessonData = await getLessonContent(currentLesson.id);
+
+          // 优先从缓存加载
+          const lessonData = await cacheManager.prefetchLesson(
+            currentLesson.id,
+            () => getLessonContent(currentLesson.id)
+          );
 
           // 使用不可变更新方式更新状态
           setCurrentLesson(prevLesson => ({
@@ -59,7 +70,7 @@ export function useLesson() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 只在组件挂载时执行一次，避免重复加载
 
-  // 切换课程
+  // 切换课程（使用缓存优化）
   const changeLesson = async (lessonId: string) => {
     const lesson = findLessonById(lessonId);
     if (lesson) {
@@ -70,8 +81,11 @@ export function useLesson() {
         // 保存当前选择的课程ID到本地存储
         localStorage.setItem(LAST_LESSON_ID_KEY, lessonId);
 
-        // 从后端API获取完整的课程内容
-        const lessonData = await getLessonContent(lessonId);
+        // 优先从缓存读取，缓存未命中时从网络获取
+        const lessonData = await cacheManager.prefetchLesson(
+          lessonId,
+          () => getLessonContent(lessonId)
+        );
 
         // 使用不可变更新方式更新课程内容
         setCurrentLesson({
@@ -83,7 +97,7 @@ export function useLesson() {
         console.error('加载课程内容失败:', error);
         setError('加载课程内容失败');
 
-        // 如果后端加载失败，使用本地数据
+        // 如果加载失败，使用本地数据
         localStorage.setItem(LAST_LESSON_ID_KEY, lessonId);
         setCurrentLesson(lesson);
       } finally {

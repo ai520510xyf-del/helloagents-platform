@@ -21,9 +21,7 @@ import { useLesson } from '../hooks/useLesson';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useCodeExecution } from '../hooks/useCodeExecution';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
-
-const STORAGE_PREFIX = 'helloagents_lesson_code_';
-const THEME_KEY = 'helloagents_theme';
+import { lessonStorage, themeStorage } from '../utils/storage';
 
 export function LearnPage() {
   // 响应式布局检测
@@ -34,26 +32,15 @@ export function LearnPage() {
 
   // 主题管理
   const loadThemeFromStorage = (): 'light' | 'dark' => {
-    try {
-      const savedTheme = localStorage.getItem(THEME_KEY);
-      return (savedTheme === 'light' || savedTheme === 'dark') ? savedTheme : 'dark';
-    } catch (error) {
-      console.error('加载主题失败:', error);
-      return 'dark';
-    }
+    const savedTheme = themeStorage.get<'light' | 'dark'>('theme', 'dark');
+    return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark';
   };
 
   const [theme, setTheme] = useState<'light' | 'dark'>(loadThemeFromStorage());
 
   // 代码编辑器状态
   const loadCodeFromStorage = (lessonId: string): string => {
-    try {
-      const savedCode = localStorage.getItem(STORAGE_PREFIX + lessonId);
-      return savedCode || '';
-    } catch (error) {
-      console.error('加载本地缓存失败:', error);
-      return '';
-    }
+    return lessonStorage.get<string>(`code_${lessonId}`, '') || '';
   };
 
   const [code, setCode] = useState(loadCodeFromStorage(currentLesson.id));
@@ -80,21 +67,13 @@ export function LearnPage() {
     } else {
       root.classList.remove('dark');
     }
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-    } catch (error) {
-      console.error('保存主题失败:', error);
-    }
+    themeStorage.set('theme', theme);
   }, [theme]);
 
   // 自动保存代码到本地存储
   useEffect(() => {
     if (currentLesson) {
-      try {
-        localStorage.setItem(STORAGE_PREFIX + currentLesson.id, code);
-      } catch (error) {
-        console.error('保存本地缓存失败:', error);
-      }
+      lessonStorage.set(`code_${currentLesson.id}`, code);
     }
   }, [code, currentLesson]);
 
@@ -120,11 +99,7 @@ export function LearnPage() {
     if (!currentLesson) return;
 
     // 清除当前课程的本地缓存
-    try {
-      localStorage.removeItem(STORAGE_PREFIX + currentLesson.id);
-    } catch (error) {
-      console.error('清除本地缓存失败:', error);
-    }
+    lessonStorage.remove(`code_${currentLesson.id}`);
 
     // 重置代码区域为空
     setCode('');
@@ -161,7 +136,7 @@ export function LearnPage() {
             theme={theme}
             onToggleTheme={toggleTheme}
           />
-          <div className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
+          <main className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
             <MobileLayout
               currentLesson={currentLesson}
               onLessonChange={handleLessonChange}
@@ -184,7 +159,7 @@ export function LearnPage() {
               onSendMessage={sendMessage}
               theme={theme}
             />
-          </div>
+          </main>
         </div>
       </>
     );
@@ -202,7 +177,7 @@ export function LearnPage() {
             theme={theme}
             onToggleTheme={toggleTheme}
           />
-          <div className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
+          <main className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
             <TabletLayout
               currentLesson={currentLesson}
               onLessonChange={handleLessonChange}
@@ -225,7 +200,7 @@ export function LearnPage() {
               onSendMessage={sendMessage}
               theme={theme}
             />
-          </div>
+          </main>
         </div>
       </>
     );
@@ -247,7 +222,7 @@ export function LearnPage() {
         />
 
         {/* 主内容区 */}
-        <div style={{ marginTop: '0.5rem', height: 'calc(100vh - 0.5rem - 70px)' }}>
+        <main style={{ marginTop: '0.5rem', height: 'calc(100vh - 0.5rem - 70px)' }}>
           {/* 上半部分：三栏布局 */}
           <div style={{ height: '70%' }}>
             {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
@@ -315,7 +290,7 @@ export function LearnPage() {
               onClear={clearOutput}
             />
           </div>
-        </div>
+        </main>
       </div>
     </>
   );

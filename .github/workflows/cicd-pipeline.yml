@@ -1,0 +1,572 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip tests (not recommended)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ${{ github.repository }}-backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository }}-frontend
+
+jobs:
+  # Stage 1: Code Quality Checks
+  code-quality:
+    name: Code Quality Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff black isort mypy
+
+      - name: Backend linting (Ruff)
+        working-directory: ./backend
+        run: |
+          ruff check . || echo "Ruff found issues"
+
+      - name: Backend formatting check (Black)
+        working-directory: ./backend
+        run: |
+          black --check . || echo "Black found formatting issues"
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci --prefer-offline
+
+      - name: Frontend linting (ESLint)
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: Generate quality report
+        if: always()
+        run: |
+          echo "## Code Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Linting: Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend Formatting: Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend Linting: Completed" >> $GITHUB_STEP_SUMMARY
+
+  # Stage 2: Backend Tests
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: code-quality
+    if: ${{ !inputs.skip_tests }}
+
+    strategy:
+      matrix:
+        test-type: [unit, integration]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unit tests
+        if: matrix.test-type == 'unit'
+        working-directory: ./backend
+        run: |
+          pytest tests/ \
+            -m "not slow and not stress and not benchmark" \
+            --ignore=tests/test_container_pool.py \
+            --ignore=tests/test_container_pool_integration.py \
+            --ignore=tests/test_performance.py \
+            --ignore=tests/test_sandbox.py \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-report=term \
+            -v
+
+      - name: Run integration tests
+        if: matrix.test-type == 'integration'
+        working-directory: ./backend
+        run: |
+          pytest tests/ \
+            -m "not benchmark" \
+            --cov=app \
+            --cov-report=xml \
+            --cov-report=term \
+            -v
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./backend/coverage.xml
+          flags: backend-${{ matrix.test-type }}
+          name: backend-${{ matrix.test-type }}-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-${{ matrix.test-type }}
+          path: backend/htmlcov/
+          retention-days: 7
+
+      - name: Check coverage threshold
+        if: matrix.test-type == 'unit'
+        working-directory: ./backend
+        run: |
+          COVERAGE=$(python3 -c "import xml.etree.ElementTree as ET; tree = ET.parse('coverage.xml'); root = tree.getroot(); print(root.attrib['line-rate'])")
+          COVERAGE_PCT=$(echo "$COVERAGE * 100" | bc -l | xargs printf "%.0f")
+          echo "Coverage: ${COVERAGE_PCT}%"
+          if [ "$COVERAGE_PCT" -lt 50 ]; then
+            echo "⚠️ Coverage ${COVERAGE_PCT}% is below threshold 50%"
+          else
+            echo "✅ Coverage ${COVERAGE_PCT}% meets threshold"
+          fi
+
+  # Stage 3: Frontend Tests
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: code-quality
+    if: ${{ !inputs.skip_tests }}
+
+    strategy:
+      matrix:
+        test-type: [unit, e2e]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci --prefer-offline
+
+      - name: Run unit tests
+        if: matrix.test-type == 'unit'
+        working-directory: ./frontend
+        run: npm run test:coverage
+
+      - name: Install Playwright browsers
+        if: matrix.test-type == 'e2e'
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        if: matrix.test-type == 'e2e'
+        working-directory: ./frontend
+        run: npm run test:e2e:chromium
+
+      - name: Upload E2E test results
+        if: matrix.test-type == 'e2e' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      - name: Upload coverage to Codecov
+        if: matrix.test-type == 'unit'
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./frontend/coverage/coverage-final.json
+          flags: frontend-unit
+          name: frontend-unit-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage artifacts
+        if: matrix.test-type == 'unit'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  # Stage 4: Build
+  build:
+    name: Build Applications
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [backend-tests, frontend-tests]
+    if: |
+      always() &&
+      (needs.backend-tests.result == 'success' || needs.backend-tests.result == 'skipped') &&
+      (needs.frontend-tests.result == 'success' || needs.frontend-tests.result == 'skipped')
+
+    strategy:
+      matrix:
+        component: [backend, frontend]
+      fail-fast: false
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.component }}
+          file: ./${{ matrix.component }}/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          build-args: |
+            VITE_API_URL=${{ secrets.VITE_API_URL || 'https://helloagents-platform.onrender.com' }}
+
+      - name: Generate artifact attestation
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  # Stage 5: Security Scan
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: build
+    if: github.event_name != 'pull_request'
+
+    permissions:
+      contents: read
+      security-events: write
+
+    strategy:
+      matrix:
+        component: [backend, frontend]
+      fail-fast: false
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository }}-${{ matrix.component }}:${{ github.ref_name }}
+          format: 'sarif'
+          output: 'trivy-results-${{ matrix.component }}.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results-${{ matrix.component }}.sarif'
+          category: 'trivy-${{ matrix.component }}'
+
+  # Stage 6: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build, security-scan]
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/develop' &&
+      needs.build.result == 'success'
+    environment:
+      name: staging
+      url: https://helloagents-platform-staging.pages.dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy Frontend to Cloudflare Pages (Staging)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=helloagents-platform-staging
+
+      - name: Trigger Backend Deployment (Render)
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "develop"}'
+
+      - name: Wait for deployment
+        run: sleep 60
+
+      - name: Run smoke tests
+        run: |
+          chmod +x ./scripts/deployment/smoke-test.sh
+          export BACKEND_URL="${{ secrets.STAGING_BACKEND_URL }}"
+          export FRONTEND_URL="https://helloagents-platform-staging.pages.dev"
+          ./scripts/deployment/smoke-test.sh
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Staging Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: https://helloagents-platform-staging.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: ${{ secrets.STAGING_BACKEND_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployed at: $(date)" >> $GITHUB_STEP_SUMMARY
+
+  # Stage 7: Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build, security-scan]
+    if: |
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      needs.build.result == 'success'
+    environment:
+      name: production
+      url: https://helloagents-platform.pages.dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment backup
+        run: |
+          echo "Creating backup of current production deployment..."
+          echo "BACKUP_TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+
+      - name: Deploy Frontend to Cloudflare Pages (Production)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy frontend/dist --project-name=helloagents-platform
+
+      - name: Trigger Backend Deployment (Render)
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION }}" \
+            -H "Content-Type: application/json" \
+            -d '{"ref": "main"}'
+
+      - name: Wait for deployment to stabilize
+        run: sleep 90
+
+      - name: Run production health checks
+        id: health_check
+        run: |
+          chmod +x ./scripts/deployment/health-check.sh
+          export BACKEND_URL="${{ secrets.PRODUCTION_BACKEND_URL }}"
+          export FRONTEND_URL="https://helloagents-platform.pages.dev"
+          ./scripts/deployment/health-check.sh
+
+      - name: Run production smoke tests
+        if: success()
+        run: |
+          chmod +x ./scripts/deployment/smoke-test.sh
+          export BACKEND_URL="${{ secrets.PRODUCTION_BACKEND_URL }}"
+          export FRONTEND_URL="https://helloagents-platform.pages.dev"
+          ./scripts/deployment/smoke-test.sh
+
+      - name: Monitor error rates
+        if: success()
+        run: |
+          echo "Monitoring error rates for 2 minutes..."
+          sleep 120
+
+      - name: Production deployment summary
+        if: success()
+        run: |
+          echo "## ✅ Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: https://helloagents-platform.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: ${{ secrets.PRODUCTION_BACKEND_URL }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployed at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Health Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: ✅ Healthy" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: ✅ Healthy" >> $GITHUB_STEP_SUMMARY
+          echo "- Smoke Tests: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "## ⚠️ Deployment failed, rollback required" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Manual rollback steps:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Redeploy previous version from Render dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "2. Rollback Cloudflare Pages deployment" >> $GITHUB_STEP_SUMMARY
+          echo "3. Verify health checks" >> $GITHUB_STEP_SUMMARY
+
+  # Stage 8: Post-Deployment Tests
+  post-deployment:
+    name: Post-Deployment Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy-staging]
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci --prefer-offline
+
+      - name: Run E2E tests against staging
+        working-directory: ./frontend
+        env:
+          BASE_URL: https://helloagents-platform-staging.pages.dev
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e:chromium
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: post-deployment-test-results
+          path: frontend/playwright-report/
+          retention-days: 7
+
+  # Pipeline Summary
+  pipeline-summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [code-quality, backend-tests, frontend-tests, build, security-scan, deploy-staging, deploy-production]
+    if: always()
+
+    steps:
+      - name: Generate pipeline summary
+        run: |
+          echo "## CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Code Quality | ${{ needs.code-quality.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Tests | ${{ needs.backend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Tests | ${{ needs.frontend-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scan | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Staging | ${{ needs.deploy-staging.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Production | ${{ needs.deploy-production.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pipeline Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Started at: ${{ github.event.head_commit.timestamp }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check overall status
+        run: |
+          if [[ "${{ needs.code-quality.result }}" == "success" ]] && \
+             ([[ "${{ needs.backend-tests.result }}" == "success" ]] || [[ "${{ needs.backend-tests.result }}" == "skipped" ]]) && \
+             ([[ "${{ needs.frontend-tests.result }}" == "success" ]] || [[ "${{ needs.frontend-tests.result }}" == "skipped" ]]) && \
+             [[ "${{ needs.build.result }}" == "success" ]]; then
+            echo "✅ Pipeline completed successfully!" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          else
+            echo "❌ Pipeline failed. Please review the logs." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

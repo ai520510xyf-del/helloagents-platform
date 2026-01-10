@@ -1,0 +1,310 @@
+# ===================================================================
+# HelloAgents Platform - SLI/SLO/SLA 定义
+# Service Level Indicators, Objectives, and Agreements
+# ===================================================================
+
+# ========================================
+# 服务等级指标 (SLI) 定义
+# ========================================
+
+slis:
+  # 1. API 可用性
+  - name: api_availability
+    description: "API 服务可用性百分比 (非 5xx 响应)"
+    type: availability
+    query: |
+      sum(rate(http_requests_total{job="helloagents-backend",status_code!~"5.."}[30d]))
+      /
+      sum(rate(http_requests_total{job="helloagents-backend"}[30d]))
+    unit: percentage
+    calculation: |
+      (成功请求数 / 总请求数) * 100
+
+  # 2. API 延迟 (P95)
+  - name: api_latency_p95
+    description: "API 95分位响应时间"
+    type: latency
+    query: |
+      histogram_quantile(0.95,
+        rate(http_request_duration_seconds_bucket{job="helloagents-backend"}[30d])
+      )
+    unit: seconds
+    calculation: |
+      所有请求响应时间的 95 分位数
+
+  # 3. API 错误率
+  - name: api_error_rate
+    description: "API 5xx 错误率"
+    type: error_rate
+    query: |
+      sum(rate(http_requests_total{job="helloagents-backend",status_code=~"5.."}[30d]))
+      /
+      sum(rate(http_requests_total{job="helloagents-backend"}[30d]))
+    unit: percentage
+    calculation: |
+      (5xx 响应数 / 总请求数) * 100
+
+  # 4. 沙箱执行成功率
+  - name: sandbox_success_rate
+    description: "代码沙箱执行成功率"
+    type: availability
+    query: |
+      sum(rate(sandbox_executions_total{status="success"}[7d]))
+      /
+      sum(rate(sandbox_executions_total[7d]))
+    unit: percentage
+    calculation: |
+      (成功执行数 / 总执行数) * 100
+
+  # 5. 沙箱执行延迟 (P95)
+  - name: sandbox_latency_p95
+    description: "代码执行 95分位时间"
+    type: latency
+    query: |
+      histogram_quantile(0.95,
+        rate(sandbox_execution_duration_seconds_bucket[7d])
+      )
+    unit: seconds
+
+  # 6. AI 助手响应时间 (P95)
+  - name: ai_response_time_p95
+    description: "AI 助手 95分位响应时间"
+    type: latency
+    query: |
+      histogram_quantile(0.95,
+        rate(ai_chat_duration_seconds_bucket[7d])
+      )
+    unit: seconds
+
+  # 7. AI 助手成功率
+  - name: ai_success_rate
+    description: "AI 助手响应成功率"
+    type: availability
+    query: |
+      sum(rate(ai_chat_requests_total{status="success"}[7d]))
+      /
+      sum(rate(ai_chat_requests_total[7d]))
+    unit: percentage
+
+# ========================================
+# 服务等级目标 (SLO) 定义
+# ========================================
+
+slos:
+  # 1. API 可用性 SLO
+  - name: "API 服务可用性"
+    sli: api_availability
+    target: 99.5
+    target_unit: percentage
+    measurement_window: 30d
+    description: "API 服务在 30 天内的可用性目标"
+    error_budget:
+      allowed_downtime: "3.6 hours/month"
+      calculation: "(100 - 99.5) * 30 * 24 * 60 = 216 minutes = 3.6 hours"
+    consequences:
+      - "如果耗尽错误预算,暂停新功能发布"
+      - "优先修复稳定性问题"
+      - "进行事故复盘和改进"
+
+  # 2. API 延迟 SLO
+  - name: "API 响应时间"
+    sli: api_latency_p95
+    target: 0.2
+    target_unit: seconds
+    measurement_window: 7d
+    description: "95% 的 API 请求应在 200ms 内完成"
+    error_budget:
+      allowed_slow_requests: "5% of requests"
+    consequences:
+      - "超过阈值时进行性能优化"
+      - "识别慢查询和瓶颈"
+      - "考虑增加缓存或数据库优化"
+
+  # 3. API 错误率 SLO
+  - name: "API 错误率"
+    sli: api_error_rate
+    target: 0.1
+    target_unit: percentage
+    measurement_window: 7d
+    description: "API 错误率应低于 0.1%"
+    error_budget:
+      allowed_error_requests: "0.1% of requests"
+    consequences:
+      - "超过阈值立即调查"
+      - "触发 Critical 告警"
+      - "准备回滚或降级方案"
+
+  # 4. 沙箱执行成功率 SLO
+  - name: "代码沙箱可靠性"
+    sli: sandbox_success_rate
+    target: 95
+    target_unit: percentage
+    measurement_window: 7d
+    description: "95% 的代码执行应该成功完成"
+    error_budget:
+      allowed_failure_rate: "5%"
+    consequences:
+      - "检查容器池健康状态"
+      - "检查 Docker 资源限制"
+      - "优化沙箱配置"
+
+  # 5. 沙箱性能 SLO
+  - name: "代码执行性能"
+    sli: sandbox_latency_p95
+    target: 5.0
+    target_unit: seconds
+    measurement_window: 7d
+    description: "95% 的代码执行应在 5 秒内完成"
+    consequences:
+      - "优化容器启动时间"
+      - "调整资源分配"
+      - "考虑预热容器池"
+
+  # 6. AI 助手响应时间 SLO
+  - name: "AI 助手响应速度"
+    sli: ai_response_time_p95
+    target: 10.0
+    target_unit: seconds
+    measurement_window: 7d
+    description: "95% 的 AI 响应应在 10 秒内返回"
+    consequences:
+      - "检查 AI API 健康状态"
+      - "优化 prompt 长度"
+      - "考虑增加超时重试"
+
+  # 7. AI 助手可靠性 SLO
+  - name: "AI 助手可靠性"
+    sli: ai_success_rate
+    target: 98
+    target_unit: percentage
+    measurement_window: 7d
+    description: "98% 的 AI 请求应成功返回"
+    consequences:
+      - "检查 API Key 配额"
+      - "实现降级策略"
+      - "考虑备用 AI 服务"
+
+# ========================================
+# 服务等级协议 (SLA) 定义
+# ========================================
+
+sla:
+  # 面向最终用户的承诺
+  availability:
+    commitment: 99.5
+    commitment_unit: percentage
+    measurement_period: monthly
+    uptime_calculation: |
+      月度可用性 = (总时间 - 停机时间) / 总时间 * 100
+    downtime_allowance: "3.6 hours/month (216 minutes)"
+    exclusions:
+      - "计划维护 (提前 48 小时通知)"
+      - "用户侧网络问题"
+      - "不可抗力 (自然灾害、战争等)"
+    measurement_method: "基于健康检查端点 (/health) 的 HTTP 200 响应"
+
+  performance:
+    api_response_time_p95: "< 500ms"
+    api_response_time_p99: "< 1000ms"
+    page_load_time: "< 3s"
+    code_execution_time: "< 30s"
+    measurement_method: "基于 Prometheus 指标和 Sentry APM"
+
+  support:
+    response_time:
+      critical: "< 1 hour"
+      high: "< 4 hours"
+      medium: "< 24 hours"
+      low: "< 48 hours"
+    resolution_time:
+      critical: "< 4 hours"
+      high: "< 24 hours"
+      medium: "< 72 hours"
+      low: "Best effort"
+    channels:
+      - "Email: support@helloagents.com"
+      - "GitHub Issues: 技术问题"
+      - "Discord: 社区支持"
+
+  compensation:
+    # SLA 违约补偿 (仅限付费用户)
+    - availability: ">= 99.5%"
+      credit: "无补偿"
+    - availability: "99.0% - 99.5%"
+      credit: "服务积分 10%"
+    - availability: "98.0% - 99.0%"
+      credit: "服务积分 25%"
+    - availability: "< 98.0%"
+      credit: "服务积分 50%"
+
+  data_protection:
+    backup_frequency: "每日"
+    backup_retention: "30 天"
+    disaster_recovery_rto: "< 4 hours"  # Recovery Time Objective
+    disaster_recovery_rpo: "< 1 hour"   # Recovery Point Objective
+
+  security:
+    ssl_encryption: "TLS 1.2+"
+    data_encryption_at_rest: "AES-256"
+    vulnerability_scanning: "每周"
+    security_updates: "< 48 hours for critical"
+
+# ========================================
+# 错误预算计算
+# ========================================
+
+error_budget_calculation:
+  # 可用性错误预算
+  availability_99_5:
+    monthly_minutes: 43200  # 30 * 24 * 60
+    allowed_downtime_minutes: 216  # (100 - 99.5) * 43200 / 100
+    allowed_downtime_hours: 3.6
+    daily_budget_minutes: 7.2
+
+  availability_99_9:
+    monthly_minutes: 43200
+    allowed_downtime_minutes: 43.2
+    allowed_downtime_hours: 0.72
+    daily_budget_minutes: 1.44
+
+  availability_99_95:
+    monthly_minutes: 43200
+    allowed_downtime_minutes: 21.6
+    allowed_downtime_hours: 0.36
+    daily_budget_minutes: 0.72
+
+  # 延迟错误预算 (示例)
+  latency_budget:
+    total_requests_daily: 10000
+    allowed_slow_requests: 500  # 5% of 10000
+    slow_request_definition: "> 500ms"
+
+# ========================================
+# SLO 监控和报告
+# ========================================
+
+monitoring:
+  slo_dashboard_url: "http://localhost:3000/d/slo/helloagents-slo"
+  error_budget_alert_threshold: 50  # 错误预算消耗 50% 时告警
+  review_frequency: weekly
+  reporting:
+    - "每周 SLO 报告"
+    - "每月可用性报告"
+    - "季度 SLA 合规审计"
+
+  automation:
+    - "错误预算自动计算"
+    - "SLO 违约自动告警"
+    - "事故自动关联 SLO 影响"
+
+# ===================================================================
+# 文档版本和更新
+# ===================================================================
+metadata:
+  version: "1.0"
+  last_updated: "2026-01-10"
+  owner: "SRE Team"
+  reviewers:
+    - "CTO"
+    - "Engineering Manager"
+  next_review: "2026-04-10"
