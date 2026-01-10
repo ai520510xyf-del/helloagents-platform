@@ -85,6 +85,10 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
+      - name: Frontend type checking (TypeScript)
+        working-directory: ./frontend
+        run: npm run typecheck
+
       - name: Generate quality report
         if: always()
         run: |
@@ -93,6 +97,7 @@ jobs:
           echo "- Backend Linting: Completed" >> $GITHUB_STEP_SUMMARY
           echo "- Backend Formatting: Completed" >> $GITHUB_STEP_SUMMARY
           echo "- Frontend Linting: Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend Type Checking: Completed" >> $GITHUB_STEP_SUMMARY
 
   # Stage 2: Backend Tests
   backend-tests:
