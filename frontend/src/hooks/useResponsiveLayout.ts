@@ -19,6 +19,8 @@ export interface ResponsiveLayout {
   isDesktop: boolean;
   screenWidth: number;
   screenHeight: number;
+  isLandscape: boolean;
+  isPortrait: boolean;
 }
 
 const BREAKPOINTS = {
@@ -26,7 +28,12 @@ const BREAKPOINTS = {
   tablet: 1024,
 } as const;
 
-function getLayoutType(width: number): LayoutType {
+function getLayoutType(width: number, _height: number, isLandscape: boolean): LayoutType {
+  // 横屏模式下，如果是小屏幕（手机），自动切换到平板布局
+  if (isLandscape && width < BREAKPOINTS.tablet && width > BREAKPOINTS.mobile - 1) {
+    return 'tablet';
+  }
+
   if (width < BREAKPOINTS.mobile) return 'mobile';
   if (width < BREAKPOINTS.tablet) return 'tablet';
   return 'desktop';
@@ -56,7 +63,9 @@ export function useResponsiveLayout(): ResponsiveLayout {
     };
   }, []);
 
-  const layoutType = getLayoutType(screenWidth);
+  const isLandscape = screenWidth > screenHeight;
+  const isPortrait = screenHeight >= screenWidth;
+  const layoutType = getLayoutType(screenWidth, screenHeight, isLandscape);
 
   return {
     layoutType,
@@ -65,5 +74,7 @@ export function useResponsiveLayout(): ResponsiveLayout {
     isDesktop: layoutType === 'desktop',
     screenWidth,
     screenHeight,
+    isLandscape,
+    isPortrait,
   };
 }

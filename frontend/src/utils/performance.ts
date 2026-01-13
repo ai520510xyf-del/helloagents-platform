@@ -94,8 +94,8 @@ function logMetric(metric: PerformanceMetric) {
 
 // 初始化性能监控
 export async function initPerformanceMonitoring() {
-  // 动态导入 web-vitals 以避免阻塞主线程
-  const { onCLS, onLCP, onINP, onTTFB, onFCP } = await import('web-vitals');
+  // 使用静态导入以避免代码分割问题
+  const { onCLS, onLCP, onINP, onTTFB, onFCP } = await import(/* webpackIgnore: true */ 'web-vitals/attribution');
 
   const handleMetric = (metric: Metric) => {
     const formattedMetric = formatMetric(metric);

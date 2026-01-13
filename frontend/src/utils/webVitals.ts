@@ -10,7 +10,8 @@
  * - INP (Interaction to Next Paint): 交互到下次绘制 < 200ms
  */
 
-import { onCLS, onLCP, onFCP, onTTFB, onINP, type Metric } from 'web-vitals';
+// 使用 attribution 版本以提供更详细的性能信息
+import { onCLS, onLCP, onFCP, onTTFB, onINP, type Metric } from 'web-vitals/attribution';
 
 // 性能数据上报接口
 interface PerformanceData {

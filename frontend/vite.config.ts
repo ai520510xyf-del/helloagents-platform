@@ -55,26 +55,60 @@ export default defineConfig({
     // 优化 Chunk 分割策略
     rollupOptions: {
       output: {
-        // 手动分块，提取第三方库
-        manualChunks: {
+        // 手动分块，提取第三方库 - 优化版
+        manualChunks: (id) => {
           // React 核心库
-          'react-vendor': ['react', 'react-dom'],
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
 
-          // Monaco Editor (代码编辑器 - 较大)
-          'monaco-editor': ['monaco-editor', '@monaco-editor/react'],
+          // Monaco Editor - 单独分块，懒加载
+          if (id.includes('node_modules/monaco-editor') || id.includes('node_modules/@monaco-editor')) {
+            return 'monaco-editor';
+          }
 
-          // Markdown 相关
-          'markdown': ['react-markdown', 'remark-gfm', 'rehype-raw'],
+          // Markdown 相关 - 拆分为独立块
+          if (id.includes('node_modules/react-markdown')) {
+            return 'markdown-renderer';
+          }
+          if (id.includes('node_modules/remark-gfm') || id.includes('node_modules/rehype-raw')) {
+            return 'markdown-plugins';
+          }
 
           // UI 组件库
-          'ui-vendor': [
-            'lucide-react',
-            'react-resizable-panels',
-            'react-toastify',
-          ],
+          if (id.includes('node_modules/lucide-react')) {
+            return 'icons';
+          }
+          if (id.includes('node_modules/react-resizable-panels') ||
+              id.includes('node_modules/react-toastify')) {
+            return 'ui-vendor';
+          }
+
+          // 网络和状态管理
+          if (id.includes('node_modules/axios')) {
+            return 'network';
+          }
+          if (id.includes('node_modules/zustand')) {
+            return 'state';
+          }
+          if (id.includes('node_modules/socket.io-client')) {
+            return 'websocket';
+          }
+
+          // Web Vitals
+          if (id.includes('node_modules/web-vitals')) {
+            return 'web-vitals';
+          }
 
           // 工具库
-          'utils': ['axios', 'zustand', 'socket.io-client', 'clsx', 'tailwind-merge'],
+          if (id.includes('node_modules/clsx') || id.includes('node_modules/tailwind-merge')) {
+            return 'utils';
+          }
+
+          // 其他 node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
 
         // 优化文件命名

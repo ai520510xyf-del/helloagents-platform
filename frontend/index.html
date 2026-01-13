@@ -27,9 +27,17 @@
     <link rel="dns-prefetch" href="https://helloagents-platform.onrender.com" />
     <link rel="preconnect" href="http://localhost:8000" />
 
-    <!-- 性能优化: 预加载关键资源 -->
+    <!-- 性能优化: 关键资源预加载 -->
+    <!-- 预加载主应用脚本 -->
     <link rel="modulepreload" href="/src/main.tsx" />
+
+    <!-- 预连接重要的字体和资源域名 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+
+    <!-- 预获取次要资源 (空闲时加载) -->
     <link rel="prefetch" as="script" href="/src/components/LazyCodeEditor.tsx" />
+    <link rel="prefetch" as="style" href="/src/index.css" />
 
     <!-- 性能优化: 字体加载优化 -->
     <style>

@@ -13,7 +13,8 @@
  * - WCAG 2.1 AA 标准
  */
 
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useState } from 'react';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Play, StopCircle, RotateCcw, ChevronRight, ChevronLeft } from 'lucide-react';
 import { LazyCodeEditor } from '../LazyCodeEditor';
 import { Button } from '../ui/Button';
@@ -48,6 +49,9 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
   isCollapsed = false,
   onToggleCollapse
 }: CodeEditorPanelProps) {
+  // 确认对话框状态
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
   // 键盘快捷键支持
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -98,12 +102,12 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
         aria-label="代码文件标签"
       >
         <div
-          className={`flex items-center gap-2 px-3 py-1 border-t-2 border-primary text-sm ${theme === 'dark' ? 'bg-bg-dark' : 'bg-white'}`}
+          className={`flex items-center gap-2 px-3 py-1 border-t-2 border-primary text-sm ${theme === 'dark' ? 'bg-bg-dark' : 'bg-white'} max-w-[200px] md:max-w-none`}
           role="tab"
           aria-selected="true"
           aria-label={`当前文件：lesson_${currentLesson.id.replace('.', '_')}.py`}
         >
-          <span>lesson_{currentLesson.id.replace('.', '_')}.py</span>
+          <span className="truncate">lesson_{currentLesson.id.replace('.', '_')}.py</span>
         </div>
 
         {/* 最小化/展开按钮 */}
@@ -170,7 +174,7 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
               <Button
                 variant="secondary"
                 size="sm"
-                onClick={onReset}
+                onClick={() => setShowResetConfirm(true)}
                 className={theme === 'dark' ? '' : 'border-gray-300 hover:bg-gray-100 text-gray-700'}
                 data-testid="reset-button"
                 aria-label="重置代码到初始状态"
@@ -199,6 +203,22 @@ export const CodeEditorPanel = memo(function CodeEditorPanel({
           <p className="text-sm">点击右上角按钮展开代码编辑器</p>
         </div>
       )}
+
+      {/* 重置确认对话框 */}
+      <ConfirmDialog
+        isOpen={showResetConfirm}
+        type="warning"
+        title="确认重置代码？"
+        message="重置后将清空当前代码内容，并且无法恢复。建议在重置前先保存重要代码。"
+        confirmText="确认重置"
+        cancelText="取消"
+        onConfirm={() => {
+          setShowResetConfirm(false);
+          onReset();
+        }}
+        onCancel={() => setShowResetConfirm(false)}
+        theme={theme}
+      />
     </div>
   );
 }, (prevProps, nextProps) => {
