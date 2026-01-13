@@ -251,13 +251,20 @@ export function LearnPage() {
         {/* 主内容区 - 使用垂直可调整布局 */}
         <main className="flex-1 min-h-0">
           {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
-          <Group direction="vertical">
+          <Group direction="vertical" id="desktop-vertical-group">
             {/* 上半部分：三栏布局 */}
-            <Panel defaultSize={70} minSize={30}>
+            <Panel id="desktop-top-section" defaultSize={70} minSize={30}>
               {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
-              <Group direction="horizontal">
+              <Group direction="horizontal" id="desktop-main-panels">
                 {/* 左侧：课程目录 */}
-                <Panel defaultSize={20} minSize={isCourseMenuCollapsed ? 5 : 15} maxSize={isCourseMenuCollapsed ? 5 : 25} style={{ height: '100%', overflow: 'auto' }}>
+                <Panel
+                  id="course-menu"
+                  defaultSize={isCourseMenuCollapsed ? 5 : 20}
+                  minSize={isCourseMenuCollapsed ? 5 : 15}
+                  maxSize={isCourseMenuCollapsed ? 5 : 30}
+                  collapsible={true}
+                  style={{ height: '100%', overflow: 'auto' }}
+                >
                   <CourseMenu
                     currentLesson={currentLesson}
                     theme={theme}
@@ -274,7 +281,14 @@ export function LearnPage() {
                 }`} />
 
                 {/* 中间：代码编辑器 */}
-                <Panel defaultSize={50} minSize={isCodeEditorCollapsed ? 5 : 30} maxSize={isCodeEditorCollapsed ? 5 : 70} style={{ height: '100%', overflow: 'auto' }}>
+                <Panel
+                  id="code-editor"
+                  defaultSize={isCodeEditorCollapsed ? 5 : 50}
+                  minSize={isCodeEditorCollapsed ? 5 : 30}
+                  maxSize={isCodeEditorCollapsed ? 5 : 70}
+                  collapsible={true}
+                  style={{ height: '100%', overflow: 'auto' }}
+                >
                   <CodeEditorPanel
                     code={code}
                     onCodeChange={handleCodeChange}
@@ -298,7 +312,7 @@ export function LearnPage() {
                 }`} />
 
                 {/* 右侧：课程内容 + AI 助手 */}
-                <Panel defaultSize={30} minSize={20} style={{ height: '100%', overflow: 'auto' }}>
+                <Panel id="content-panel" defaultSize={30} minSize={20} style={{ height: '100%', overflow: 'auto' }}>
                   <ContentPanel
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
@@ -326,7 +340,7 @@ export function LearnPage() {
             }`} />
 
             {/* 下半部分：终端输出 */}
-            <Panel defaultSize={30} minSize={15}>
+            <Panel id="terminal-panel" defaultSize={30} minSize={15}>
               <TerminalOutput
                 output={output}
                 isRunning={isRunning}

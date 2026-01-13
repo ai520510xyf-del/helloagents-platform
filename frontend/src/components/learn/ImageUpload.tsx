@@ -4,7 +4,7 @@
  */
 
 import { useRef, useState, useCallback } from 'react';
-import { Image as ImageIcon, X, Upload } from 'lucide-react';
+import { Image as ImageIcon, X } from 'lucide-react';
 
 interface UploadedImage {
   id: string;
@@ -35,7 +35,6 @@ export function ImageUpload({
   disabled = false,
 }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // 压缩图片
@@ -146,28 +145,6 @@ export function ImageUpload({
     fileInputRef.current?.click();
   };
 
-  // 拖拽事件
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    if (!disabled) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    if (!disabled) {
-      handleFiles(e.dataTransfer.files);
-    }
-  };
-
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -206,33 +183,6 @@ export function ImageUpload({
         className="hidden"
         disabled={disabled}
       />
-
-      {/* 拖拽区域（仅在没有图片时显示） */}
-      {images.length === 0 && !disabled && (
-        <div
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={handleClick}
-          className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-            isDragging
-              ? theme === 'dark'
-                ? 'border-primary bg-primary/5'
-                : 'border-primary bg-primary/5'
-              : theme === 'dark'
-              ? 'border-border hover:border-primary/50'
-              : 'border-gray-300 hover:border-primary/50'
-          }`}
-        >
-          <Upload className={`h-8 w-8 mx-auto mb-2 ${theme === 'dark' ? 'text-text-muted' : 'text-gray-400'}`} />
-          <p className={`text-sm ${theme === 'dark' ? 'text-text-secondary' : 'text-gray-600'}`}>
-            点击或拖拽上传图片
-          </p>
-          <p className={`text-xs mt-1 ${theme === 'dark' ? 'text-text-muted' : 'text-gray-500'}`}>
-            支持 JPG, PNG, WebP，最大 {maxSizeMB}MB
-          </p>
-        </div>
-      )}
 
       {/* 图片预览列表 */}
       {images.length > 0 && (

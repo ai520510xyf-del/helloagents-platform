@@ -3,6 +3,7 @@
  * 右侧面板，包含课程内容和 AI 助手
  */
 
+import { useCallback } from 'react';
 import { Bot } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -45,6 +46,122 @@ export function ContentPanel({
   uploadedImages,
   onImagesChange
 }: ContentPanelProps) {
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+  const MAX_SIZE_MB = 5;
+  const MAX_IMAGES = 5;
+
+  // 压缩图片
+  const compressImage = useCallback((file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          // 如果图片太大，等比例缩放
+          const MAX_WIDTH = 1920;
+          const MAX_HEIGHT = 1080;
+
+          if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+            width = width * ratio;
+            height = height * ratio;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('无法创建canvas上下文'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 转换为 base64，使用 0.8 的质量压缩
+          const base64 = canvas.toDataURL(file.type, 0.8);
+          resolve(base64);
+        };
+
+        img.onerror = () => reject(new Error('图片加载失败'));
+        img.src = e.target?.result as string;
+      };
+
+      reader.onerror = () => reject(new Error('文件读取失败'));
+      reader.readAsDataURL(file);
+    });
+  }, []);
+
+  // 处理粘贴图片
+  const handlePaste = useCallback(async (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items || isChatLoading) return;
+
+    const imageFiles: File[] = [];
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          imageFiles.push(file);
+        }
+      }
+    }
+
+    if (imageFiles.length === 0) return;
+
+    // 阻止默认粘贴行为（避免粘贴文本）
+    e.preventDefault();
+
+    // 检查数量限制
+    if (uploadedImages.length + imageFiles.length > MAX_IMAGES) {
+      console.warn(`最多只能上传 ${MAX_IMAGES} 张图片`);
+      return;
+    }
+
+    const newImages: UploadedImage[] = [];
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i];
+
+      // 检查文件类型
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        console.warn(`不支持的文件格式：${file.name}`);
+        continue;
+      }
+
+      // 检查文件大小
+      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        console.warn(`文件太大：${file.name} (最大 ${MAX_SIZE_MB}MB)`);
+        continue;
+      }
+
+      try {
+        const base64 = await compressImage(file);
+
+        newImages.push({
+          id: `${Date.now()}_${i}`,
+          name: file.name || `image_${i}.png`,
+          size: file.size,
+          base64,
+          preview: base64,
+        });
+      } catch (err) {
+        console.error(`处理失败：${file.name}`, err);
+      }
+    }
+
+    if (newImages.length > 0) {
+      onImagesChange([...uploadedImages, ...newImages]);
+    }
+  }, [uploadedImages, isChatLoading, onImagesChange, compressImage]);
+
   return (
     <div className={`h-full flex flex-col border-l ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
       {/* 标签切换 */}
@@ -254,18 +371,29 @@ export function ContentPanel({
               className={`p-4 border-t safe-area-inset-bottom ${theme === 'dark' ? 'border-border' : 'border-gray-200'}`}
               id="chat-input-container"
             >
-              {/* 图片上传区域 */}
-              <div className="mb-3">
-                <ImageUpload
-                  images={uploadedImages}
-                  onImagesChange={onImagesChange}
-                  theme={theme}
-                  disabled={isChatLoading}
-                />
-              </div>
+              {/* 图片预览列表（如果有上传的图片） */}
+              {uploadedImages.length > 0 && (
+                <div className="mb-3">
+                  <ImageUpload
+                    images={uploadedImages}
+                    onImagesChange={onImagesChange}
+                    theme={theme}
+                    disabled={isChatLoading}
+                  />
+                </div>
+              )}
 
               {/* 输入框 */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                {/* 图片上传按钮（仅图标） */}
+                {uploadedImages.length === 0 && (
+                  <ImageUpload
+                    images={uploadedImages}
+                    onImagesChange={onImagesChange}
+                    theme={theme}
+                    disabled={isChatLoading}
+                  />
+                )}
                 <input
                   type="text"
                   value={chatInput}
@@ -284,6 +412,7 @@ export function ContentPanel({
                       }, 300);
                     }
                   }}
+                  onPaste={handlePaste}
                   placeholder="输入你的问题..."
                   className={`flex-1 px-3 py-2.5 border rounded text-sm md:text-base focus:outline-none focus:border-primary transition-colors ${
                     theme === 'dark'
