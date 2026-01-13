@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { chatWithAI, type ChatMessage } from '../services/api';
 import { chatStorage } from '../utils/storage';
 import { logger } from '../utils/logger';
+import type { UploadedImage } from '../components/learn/ImageUpload';
 
 export function useChatMessages(lessonId: string, code: string) {
   // 从本地存储加载聊天历史
@@ -22,11 +23,14 @@ export function useChatMessages(lessonId: string, code: string) {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(loadChatFromStorage(lessonId));
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
 
   // 当课程切换时，加载该课程的聊天历史
   useEffect(() => {
     const savedChat = loadChatFromStorage(lessonId);
     setChatMessages(savedChat);
+    // 清空图片列表
+    setUploadedImages([]);
   }, [lessonId]);
 
   // 自动保存聊天历史到本地存储
@@ -40,23 +44,35 @@ export function useChatMessages(lessonId: string, code: string) {
   const sendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
 
+    // 如果有图片，暂时只在前端显示提示，不发送到后端
+    let userContent = chatInput;
+    if (uploadedImages.length > 0) {
+      userContent += `\n\n[📷 已上传 ${uploadedImages.length} 张图片，但当前AI模型暂不支持图片分析]`;
+    }
+
     const userMessage: ChatMessage = {
       role: 'user',
-      content: chatInput
+      content: userContent
     };
 
     // 添加用户消息到聊天历史
     setChatMessages(prev => [...prev, userMessage]);
+    const currentInput = chatInput; // 保存当前输入
     setChatInput('');
+    // 清空图片列表
+    // const currentImages = [...uploadedImages]; // 保留图片数据，供后续使用
+    setUploadedImages([]);
     setIsChatLoading(true);
 
     try {
-      // 调用 AI 聊天 API
+      // 调用 AI 聊天 API（暂不发送图片数据到后端）
       const response = await chatWithAI({
-        message: chatInput,
+        message: currentInput,
         conversation_history: chatMessages,
         lesson_id: lessonId,
         code: code
+        // TODO: 当切换到支持多模态的AI时，添加图片数据
+        // images: uploadedImages.map(img => img.base64)
       });
 
       // 添加 AI 回复到聊天历史
@@ -179,6 +195,8 @@ export function useChatMessages(lessonId: string, code: string) {
     isChatLoading,
     sendMessage,
     setChatMessages,
-    regenerateMessage
+    regenerateMessage,
+    uploadedImages,
+    setUploadedImages
   };
 }

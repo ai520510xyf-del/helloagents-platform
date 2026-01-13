@@ -58,6 +58,8 @@ export function LearnPage() {
     isChatLoading,
     sendMessage,
     regenerateMessage,
+    uploadedImages,
+    setUploadedImages,
   } = useChatMessages(currentLesson.id, code);
 
   // 代码执行管理
@@ -177,6 +179,8 @@ export function LearnPage() {
               isChatLoading={isChatLoading}
               onSendMessage={sendMessage}
               onRegenerateMessage={regenerateMessage}
+              uploadedImages={uploadedImages}
+              onImagesChange={setUploadedImages}
               theme={theme}
             />
           </main>
@@ -219,6 +223,8 @@ export function LearnPage() {
               isChatLoading={isChatLoading}
               onSendMessage={sendMessage}
               onRegenerateMessage={regenerateMessage}
+              uploadedImages={uploadedImages}
+              onImagesChange={setUploadedImages}
               theme={theme}
             />
           </main>
@@ -243,7 +249,7 @@ export function LearnPage() {
         />
 
         {/* 主内容区 - 使用垂直可调整布局 */}
-        <main style={{ marginTop: '0.5rem', height: 'calc(100vh - 0.5rem - 70px)' }}>
+        <main className="flex-1 min-h-0">
           {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
           <Group direction="vertical">
             {/* 上半部分：三栏布局 */}
@@ -261,10 +267,10 @@ export function LearnPage() {
                   />
                 </Panel>
 
-                <Separator className={`w-1 transition-colors ${
+                <Separator className={`w-1 transition-colors resizable-separator resizable-separator-vertical ${
                   theme === 'dark'
-                    ? 'bg-gray-700 hover:bg-blue-400'
-                    : 'bg-gray-300 hover:bg-blue-500'
+                    ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
+                    : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
                 }`} />
 
                 {/* 中间：代码编辑器 */}
@@ -285,10 +291,10 @@ export function LearnPage() {
                   />
                 </Panel>
 
-                <Separator className={`w-1 transition-colors ${
+                <Separator className={`w-1 transition-colors resizable-separator resizable-separator-vertical ${
                   theme === 'dark'
-                    ? 'bg-gray-700 hover:bg-blue-400'
-                    : 'bg-gray-300 hover:bg-blue-500'
+                    ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
+                    : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
                 }`} />
 
                 {/* 右侧：课程内容 + AI 助手 */}
@@ -305,16 +311,18 @@ export function LearnPage() {
                     onSendMessage={sendMessage}
                     onRegenerateMessage={regenerateMessage}
                     isContentLoading={isLessonLoading}
+                    uploadedImages={uploadedImages}
+                    onImagesChange={setUploadedImages}
                   />
                 </Panel>
               </Group>
             </Panel>
 
             {/* 可拖动的水平分割线 */}
-            <Separator className={`h-1 transition-colors ${
+            <Separator className={`h-1 transition-colors resizable-separator resizable-separator-horizontal ${
               theme === 'dark'
-                ? 'bg-gray-700 hover:bg-blue-400'
-                : 'bg-gray-300 hover:bg-blue-500'
+                ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
+                : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
             }`} />
 
             {/* 下半部分：终端输出 */}

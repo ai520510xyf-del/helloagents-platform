@@ -17,6 +17,7 @@ import { ContentPanel } from './ContentPanel';
 import { Button } from '../ui/Button';
 import { type Lesson } from '../../data/courses';
 import { type ChatMessage } from '../../services/api';
+import { type UploadedImage } from './ImageUpload';
 
 interface TabletLayoutProps {
   // 课程相关
@@ -46,6 +47,8 @@ interface TabletLayoutProps {
   isChatLoading: boolean;
   onSendMessage: () => void;
   onRegenerateMessage: (index: number) => void;
+  uploadedImages: UploadedImage[];
+  onImagesChange: (images: UploadedImage[]) => void;
 
   // 主题
   theme: 'light' | 'dark';
@@ -72,6 +75,8 @@ export function TabletLayout({
   isChatLoading,
   onSendMessage,
   onRegenerateMessage,
+  uploadedImages,
+  onImagesChange,
   theme,
 }: TabletLayoutProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -89,45 +94,8 @@ export function TabletLayout({
     <div className={`h-full flex flex-col ${theme === 'dark' ? 'bg-bg-dark text-text-primary' : 'bg-white text-gray-900'}`}>
       {/* 主内容区 */}
       <div className={`flex-1 min-h-0 relative`}>
-        {/* 课程目录侧边栏 - 可折叠 */}
-        <div
-          className={`absolute left-0 top-0 bottom-0 w-64 z-20 transform transition-transform duration-300 ${
-            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          } ${theme === 'dark' ? 'bg-bg-surface' : 'bg-white'} shadow-lg`}
-        >
-          <div className="h-full flex flex-col">
-            <div className={`h-12 flex items-center justify-between px-4 border-b ${theme === 'dark' ? 'border-border' : 'border-gray-200'}`}>
-              <span className="font-semibold">课程目录</span>
-              <button
-                onClick={toggleMenu}
-                className={`p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <CourseMenu
-                currentLesson={currentLesson}
-                theme={theme}
-                onLessonChange={(lessonId) => {
-                  onLessonChange(lessonId);
-                  setIsMenuOpen(false);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* 遮罩层 */}
-        {isMenuOpen && (
-          <div
-            className="absolute inset-0 bg-black bg-opacity-50 z-10"
-            onClick={toggleMenu}
-          />
-        )}
-
         {/* 两栏布局 */}
-        <div className="h-full">
+        <div className="h-full relative z-10">
           {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
           <Group direction="horizontal">
             {/* 左侧：代码编辑器 */}
@@ -146,8 +114,10 @@ export function TabletLayout({
                   >
                     <Menu className="h-5 w-5" />
                   </button>
-                  <div className={`flex items-center gap-2 px-3 py-1.5 border-t-2 border-primary text-sm ${theme === 'dark' ? 'bg-bg-dark' : 'bg-white'}`}>
-                    <span>lesson_{currentLesson.id.replace('.', '_')}.py</span>
+                  <div className={`flex items-center gap-2 px-3 py-1.5 border-t-2 border-primary text-sm ${theme === 'dark' ? 'bg-bg-dark' : 'bg-white'} max-w-[220px]`}>
+                    <span className="truncate" title={`lesson_${currentLesson.id.replace('.', '_')}.py`}>
+                      lesson_{currentLesson.id.replace('.', '_')}.py
+                    </span>
                   </div>
                 </div>
 
@@ -208,10 +178,10 @@ export function TabletLayout({
               </div>
             </Panel>
 
-            <Separator className={`w-1 transition-colors ${
+            <Separator className={`w-1 transition-colors resizable-separator resizable-separator-vertical ${
               theme === 'dark'
-                ? 'bg-gray-700 hover:bg-blue-400'
-                : 'bg-gray-300 hover:bg-blue-500'
+                ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
+                : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
             }`} />
 
             {/* 右侧：课程内容 + AI 助手 */}
@@ -227,9 +197,48 @@ export function TabletLayout({
                 isChatLoading={isChatLoading}
                 onSendMessage={onSendMessage}
                 onRegenerateMessage={onRegenerateMessage}
+                uploadedImages={uploadedImages}
+                onImagesChange={onImagesChange}
               />
             </Panel>
           </Group>
+        </div>
+
+        {/* 遮罩层 */}
+        {isMenuOpen && (
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 z-20"
+            onClick={toggleMenu}
+          />
+        )}
+
+        {/* 课程目录侧边栏 - 可折叠 */}
+        <div
+          className={`absolute left-0 top-0 bottom-0 w-64 z-30 transform transition-transform duration-300 ${
+            isMenuOpen ? 'translate-x-0' : '-translate-x-full'
+          } ${theme === 'dark' ? 'bg-bg-surface' : 'bg-white'} shadow-lg`}
+        >
+          <div className="h-full flex flex-col">
+            <div className={`h-12 flex items-center justify-between px-4 border-b ${theme === 'dark' ? 'border-border' : 'border-gray-200'}`}>
+              <span className="font-semibold">课程目录</span>
+              <button
+                onClick={toggleMenu}
+                className={`p-1 rounded hover:bg-opacity-10 hover:bg-gray-500 ${theme === 'dark' ? 'text-text-primary' : 'text-gray-900'}`}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <CourseMenu
+                currentLesson={currentLesson}
+                theme={theme}
+                onLessonChange={(lessonId) => {
+                  onLessonChange(lessonId);
+                  setIsMenuOpen(false);
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

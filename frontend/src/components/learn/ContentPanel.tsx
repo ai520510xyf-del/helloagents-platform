@@ -10,6 +10,7 @@ import rehypeRaw from 'rehype-raw';
 import { Button } from '../ui/Button';
 import { MessageActions } from './MessageActions';
 import { CodeBlock } from './CodeBlock';
+import { ImageUpload, type UploadedImage } from './ImageUpload';
 import { type Lesson } from '../../data/courses';
 import { type ChatMessage } from '../../services/api';
 
@@ -25,6 +26,8 @@ interface ContentPanelProps {
   onSendMessage: () => void;
   onRegenerateMessage: (index: number) => void;
   isContentLoading?: boolean;
+  uploadedImages: UploadedImage[];
+  onImagesChange: (images: UploadedImage[]) => void;
 }
 
 export function ContentPanel({
@@ -38,7 +41,9 @@ export function ContentPanel({
   isChatLoading,
   onSendMessage,
   onRegenerateMessage,
-  isContentLoading = false
+  isContentLoading = false,
+  uploadedImages,
+  onImagesChange
 }: ContentPanelProps) {
   return (
     <div className={`h-full flex flex-col border-l ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-50 border-gray-200'}`}>
@@ -56,7 +61,7 @@ export function ContentPanel({
           data-testid="content-tab"
         >
           {activeTab === 'content' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full z-10" />
           )}
           📖 课程内容
         </button>
@@ -72,14 +77,14 @@ export function ContentPanel({
           data-testid="ai-tab"
         >
           {activeTab === 'ai' && (
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-full z-10" />
           )}
           <Bot className="h-4 w-4 inline-block mr-1" /> AI 助手
         </button>
       </div>
 
       {/* 内容区域 */}
-      <div style={{ flex: 1, overflowY: 'auto' }} className="custom-scrollbar">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
         {activeTab === 'content' ? (
           isContentLoading ? (
             /* 加载中状态 */
@@ -244,8 +249,22 @@ export function ContentPanel({
               )}
             </div>
 
-            {/* 输入框 */}
-            <div className={`p-4 border-t ${theme === 'dark' ? 'border-border' : 'border-gray-200'}`}>
+            {/* 输入框 - 移动端键盘优化 */}
+            <div
+              className={`p-4 border-t safe-area-inset-bottom ${theme === 'dark' ? 'border-border' : 'border-gray-200'}`}
+              id="chat-input-container"
+            >
+              {/* 图片上传区域 */}
+              <div className="mb-3">
+                <ImageUpload
+                  images={uploadedImages}
+                  onImagesChange={onImagesChange}
+                  theme={theme}
+                  disabled={isChatLoading}
+                />
+              </div>
+
+              {/* 输入框 */}
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -257,13 +276,23 @@ export function ContentPanel({
                       onSendMessage();
                     }
                   }}
+                  onFocus={(e) => {
+                    // 移动端：键盘弹出时滚动到输入框
+                    if (window.innerWidth < 768) {
+                      setTimeout(() => {
+                        e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                      }, 300);
+                    }
+                  }}
                   placeholder="输入你的问题..."
-                  className={`flex-1 px-3 py-2 border rounded text-sm focus:outline-none focus:border-primary ${
+                  className={`flex-1 px-3 py-2.5 border rounded text-sm md:text-base focus:outline-none focus:border-primary transition-colors ${
                     theme === 'dark'
                       ? 'bg-bg-elevated border-border text-text-primary placeholder-text-muted'
                       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                   }`}
+                  style={{ fontSize: '16px' }}
                   disabled={isChatLoading}
+                  data-testid="chat-input"
                 />
                 <Button
                   variant="primary"
@@ -271,6 +300,7 @@ export function ContentPanel({
                   onClick={onSendMessage}
                   disabled={!chatInput.trim() || isChatLoading}
                   data-testid="send-button"
+                  className="min-w-[60px] touch-manipulation"
                 >
                   发送
                 </Button>

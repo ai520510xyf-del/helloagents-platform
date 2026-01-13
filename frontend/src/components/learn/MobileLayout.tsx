@@ -17,6 +17,7 @@ import { TerminalOutput } from './TerminalOutput';
 import { Button } from '../ui/Button';
 import { type Lesson } from '../../data/courses';
 import { type ChatMessage } from '../../services/api';
+import { type UploadedImage } from './ImageUpload';
 
 type MobileTab = 'menu' | 'editor' | 'content' | 'terminal';
 
@@ -48,6 +49,8 @@ interface MobileLayoutProps {
   isChatLoading: boolean;
   onSendMessage: () => void;
   onRegenerateMessage: (index: number) => void;
+  uploadedImages: UploadedImage[];
+  onImagesChange: (images: UploadedImage[]) => void;
 
   // 主题
   theme: 'light' | 'dark';
@@ -74,6 +77,8 @@ export function MobileLayout({
   isChatLoading,
   onSendMessage,
   onRegenerateMessage,
+  uploadedImages,
+  onImagesChange,
   theme,
 }: MobileLayoutProps) {
   const [activeTab, setActiveTab] = useState<MobileTab>('editor');
@@ -91,40 +96,8 @@ export function MobileLayout({
 
   return (
     <div className={`h-full flex flex-col ${theme === 'dark' ? 'bg-bg-dark text-text-primary' : 'bg-white text-gray-900'}`}>
-      {/* 底部导航栏 */}
-      <div className={`order-2 flex-shrink-0 border-t safe-area-inset-bottom ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-white border-gray-200'} shadow-lg`}>
-        <div className="flex items-center justify-around h-16">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-
-            return (
-              <button
-                key={tab.id}
-                onClick={() => handleTabChange(tab.id)}
-                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-200 touch-manipulation active:scale-95 relative ${
-                  isActive
-                    ? 'text-primary'
-                    : (theme === 'dark' ? 'text-text-secondary hover:text-text-primary' : 'text-gray-500 hover:text-gray-900')
-                }`}
-                data-testid={`mobile-tab-${tab.id}`}
-                aria-label={tab.label}
-                aria-selected={isActive}
-              >
-                {/* 活动指示器 */}
-                {isActive && (
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
-                )}
-                <Icon className={`h-5 w-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
-                <span className="text-xs font-medium">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 主内容区 - 使用 order-1 让它在上面 */}
-      <div className="order-1 flex-1 overflow-hidden">
+      {/* 主内容区 */}
+      <div className="flex-1 overflow-hidden">
         {/* 课程目录 */}
         {activeTab === 'menu' && (
           <div className="h-full tab-transition">
@@ -145,8 +118,10 @@ export function MobileLayout({
           <div className="h-full flex flex-col tab-transition">
             {/* 文件标签栏 */}
             <div className={`h-12 border-b flex items-center px-4 gap-2 flex-shrink-0 ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-gray-100 border-gray-200'}`}>
-              <div className={`flex items-center gap-2 px-3 py-1.5 border-t-2 border-primary text-sm ${theme === 'dark' ? 'bg-bg-dark' : 'bg-white'}`}>
-                <span>lesson_{currentLesson.id.replace('.', '_')}.py</span>
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-t-2 border-primary text-sm ${theme === 'dark' ? 'bg-bg-dark' : 'bg-white'} max-w-[180px]`}>
+                <span className="truncate" title={`lesson_${currentLesson.id.replace('.', '_')}.py`}>
+                  lesson_{currentLesson.id.replace('.', '_')}.py
+                </span>
               </div>
             </div>
 
@@ -219,6 +194,8 @@ export function MobileLayout({
               isChatLoading={isChatLoading}
               onSendMessage={onSendMessage}
               onRegenerateMessage={onRegenerateMessage}
+              uploadedImages={uploadedImages}
+              onImagesChange={onImagesChange}
             />
           </div>
         )}
@@ -234,6 +211,38 @@ export function MobileLayout({
             />
           </div>
         )}
+      </div>
+
+      {/* 底部导航栏 */}
+      <div className={`flex-shrink-0 border-t safe-area-inset-bottom ${theme === 'dark' ? 'bg-bg-surface border-border' : 'bg-white border-gray-200'} shadow-lg`}>
+        <div className="flex items-center justify-around h-16">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all duration-200 touch-manipulation active:scale-95 relative ${
+                  isActive
+                    ? 'text-primary'
+                    : (theme === 'dark' ? 'text-text-secondary hover:text-text-primary' : 'text-gray-500 hover:text-gray-900')
+                }`}
+                data-testid={`mobile-tab-${tab.id}`}
+                aria-label={tab.label}
+                aria-selected={isActive}
+              >
+                {/* 活动指示器 */}
+                {isActive && (
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-primary rounded-full" />
+                )}
+                <Icon className={`h-5 w-5 transition-transform ${isActive ? 'scale-110' : ''}`} />
+                <span className="text-xs font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

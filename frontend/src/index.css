@@ -245,6 +245,46 @@
     }
   }
 
+  /* 拖动分隔条触摸优化 */
+  .resizable-separator {
+    position: relative;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* 增加触摸区域 */
+  .resizable-separator::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* 垂直分隔条 */
+  .resizable-separator-vertical::before {
+    width: 24px;
+    height: 100%;
+  }
+
+  /* 水平分隔条 */
+  .resizable-separator-horizontal::before {
+    width: 100%;
+    height: 24px;
+  }
+
+  /* 移动端增强触摸区域 - WCAG 建议的 44px 触摸目标 */
+  @media (max-width: 1024px) {
+    .resizable-separator-vertical::before {
+      width: 44px;
+    }
+
+    .resizable-separator-horizontal::before {
+      height: 44px;
+    }
+  }
+
   /* 骨架屏加载动画 */
   .skeleton {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
