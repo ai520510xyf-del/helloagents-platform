@@ -54,6 +54,7 @@ export interface ChatRequest {
   conversation_history?: ChatMessage[];
   lesson_id?: string;
   code?: string;
+  images?: string[];  // base64 编码的图片列表
 }
 
 export interface ChatResponse {

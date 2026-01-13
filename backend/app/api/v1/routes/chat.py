@@ -13,6 +13,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from openai import OpenAI
+import requests
 
 from app.database import get_db
 from app.logger import get_logger
@@ -25,6 +26,11 @@ limiter = Limiter(key_func=get_remote_address)
 
 # DeepSeek 客户端延迟初始化
 _deepseek_client = None
+
+# Cloudflare Workers AI 配置
+CLOUDFLARE_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
+CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN")
+AI_PROVIDER = os.environ.get("AI_PROVIDER", "deepseek-chat")
 
 
 def get_deepseek_client():
@@ -54,6 +60,87 @@ def get_deepseek_client():
     return _deepseek_client
 
 
+def call_cloudflare_vision(messages: List[dict], images: List[str] = None):
+    """
+    调用 Cloudflare Workers AI 视觉模型
+
+    Args:
+        messages: 对话消息列表
+        images: base64编码的图片列表
+
+    Returns:
+        str: AI 回复内容
+
+    Raises:
+        ValueError: 当 Cloudflare 配置缺失时
+        Exception: API 调用失败时
+    """
+    if not CLOUDFLARE_ACCOUNT_ID or not CLOUDFLARE_API_TOKEN:
+        raise ValueError(
+            "CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN must be set "
+            "to use Cloudflare Workers AI vision features."
+        )
+
+    # 使用 Llama 3.2 Vision 模型
+    model = "@cf/meta/llama-3.2-11b-vision-instruct"
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/{model}"
+
+    headers = {
+        "Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    # 如果有图片，将最后一条用户消息转换为多模态格式
+    if images and len(images) > 0:
+        # 找到最后一条用户消息
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i]["role"] == "user":
+                # 将文本内容转换为多模态格式
+                text_content = messages[i]["content"]
+                messages[i]["content"] = [
+                    {"type": "text", "text": text_content}
+                ]
+                # 添加图片（只取第一张，因为模型限制）
+                for img_base64 in images[:1]:  # 只使用第一张图片
+                    # 确保 base64 字符串格式正确
+                    if not img_base64.startswith("data:image/"):
+                        img_base64 = f"data:image/jpeg;base64,{img_base64}"
+                    messages[i]["content"].append({
+                        "type": "image_url",
+                        "image_url": {"url": img_base64}
+                    })
+                break
+
+    payload = {"messages": messages}
+
+    logger.info(
+        "cloudflare_ai_call_started",
+        model=model,
+        has_images=bool(images and len(images) > 0),
+        message_count=len(messages)
+    )
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response.raise_for_status()
+
+        result = response.json()
+
+        # Cloudflare Workers AI 返回格式：{"result": {"response": "..."}}
+        if "result" in result and "response" in result["result"]:
+            return result["result"]["response"]
+        else:
+            logger.error("cloudflare_ai_unexpected_format", response=result)
+            raise Exception("Unexpected response format from Cloudflare AI")
+
+    except requests.exceptions.Timeout:
+        logger.error("cloudflare_ai_timeout")
+        raise Exception("Cloudflare AI request timed out")
+    except requests.exceptions.RequestException as e:
+        logger.error("cloudflare_ai_request_failed", error=str(e))
+        raise Exception(f"Cloudflare AI request failed: {str(e)}")
+
+
 # ============================================
 # 数据模型
 # ============================================
@@ -73,6 +160,7 @@ class ChatRequest(BaseModel):
     )
     lesson_id: Optional[str] = Field(None, description="当前课程ID（用于提供上下文）")
     code: Optional[str] = Field(None, description="当前代码（用于提供上下文）")
+    images: Optional[List[str]] = Field(None, description="图片列表（base64编码）")
 
 
 class ChatResponse(BaseModel):
@@ -168,29 +256,67 @@ async def chat_with_ai(
             lesson_id=chat_request.lesson_id,
             message_length=len(chat_request.message),
             has_code_context=bool(chat_request.code),
+            has_images=bool(chat_request.images and len(chat_request.images) > 0),
             conversation_history_length=len(chat_request.conversation_history)
         )
 
-        # 调用 DeepSeek API
-        deepseek_client = get_deepseek_client()
-        response = deepseek_client.chat.completions.create(
-            model="deepseek-chat",
-            messages=messages,
-            max_tokens=2000,
-            temperature=0.7
-        )
+        # 判断使用哪个 AI 提供商
+        has_images = chat_request.images and len(chat_request.images) > 0
+        use_vision = has_images or AI_PROVIDER == "cloudflare-vision"
 
-        # 提取回复内容
-        assistant_message = response.choices[0].message.content
+        assistant_message = None
+        total_tokens = None
+        model_used = None
+
+        if use_vision:
+            # 使用 Cloudflare Workers AI 视觉模型
+            try:
+                assistant_message = call_cloudflare_vision(messages, chat_request.images)
+                model_used = "cloudflare-llama-3.2-vision"
+                total_tokens = None  # Cloudflare 不返回 token 信息
+            except Exception as cf_error:
+                logger.warning(
+                    "cloudflare_ai_failed_fallback_to_deepseek",
+                    error=str(cf_error)
+                )
+                # 降级到 DeepSeek（不支持图片）
+                if has_images:
+                    # 添加提示说明无法处理图片
+                    messages.append({
+                        "role": "system",
+                        "content": "注意：用户上传了图片，但由于技术限制无法处理图片内容。请基于文本内容回答。"
+                    })
+
+                deepseek_client = get_deepseek_client()
+                response = deepseek_client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=messages,
+                    max_tokens=2000,
+                    temperature=0.7
+                )
+                assistant_message = response.choices[0].message.content
+                total_tokens = response.usage.total_tokens if hasattr(response, 'usage') else None
+                model_used = "deepseek-chat (fallback)"
+        else:
+            # 使用 DeepSeek API（纯文本）
+            deepseek_client = get_deepseek_client()
+            response = deepseek_client.chat.completions.create(
+                model="deepseek-chat",
+                messages=messages,
+                max_tokens=2000,
+                temperature=0.7
+            )
+            assistant_message = response.choices[0].message.content
+            total_tokens = response.usage.total_tokens if hasattr(response, 'usage') else None
+            model_used = "deepseek-chat"
 
         # 记录 AI 调用完成
-        total_tokens = response.usage.total_tokens if hasattr(response, 'usage') else None
         logger.info(
             "ai_chat_completed",
             user_id=user_id,
             lesson_id=chat_request.lesson_id,
             response_length=len(assistant_message),
-            model="deepseek-chat",
+            model=model_used,
             total_tokens=total_tokens
         )
 

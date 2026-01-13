@@ -44,10 +44,10 @@ export function useChatMessages(lessonId: string, code: string) {
   const sendMessage = async () => {
     if (!chatInput.trim() || isChatLoading) return;
 
-    // 如果有图片，暂时只在前端显示提示，不发送到后端
+    // 如果有图片，在用户消息中显示提示
     let userContent = chatInput;
     if (uploadedImages.length > 0) {
-      userContent += `\n\n[📷 已上传 ${uploadedImages.length} 张图片，但当前AI模型暂不支持图片分析]`;
+      userContent += `\n\n[📷 已上传 ${uploadedImages.length} 张图片]`;
     }
 
     const userMessage: ChatMessage = {
@@ -58,21 +58,20 @@ export function useChatMessages(lessonId: string, code: string) {
     // 添加用户消息到聊天历史
     setChatMessages(prev => [...prev, userMessage]);
     const currentInput = chatInput; // 保存当前输入
+    const currentImages = [...uploadedImages]; // 保存图片数据
     setChatInput('');
-    // 清空图片列表
-    // const currentImages = [...uploadedImages]; // 保留图片数据，供后续使用
-    setUploadedImages([]);
+    setUploadedImages([]); // 清空图片列表
     setIsChatLoading(true);
 
     try {
-      // 调用 AI 聊天 API（暂不发送图片数据到后端）
+      // 调用 AI 聊天 API，发送图片数据到后端
       const response = await chatWithAI({
         message: currentInput,
         conversation_history: chatMessages,
         lesson_id: lessonId,
-        code: code
-        // TODO: 当切换到支持多模态的AI时，添加图片数据
-        // images: uploadedImages.map(img => img.base64)
+        code: code,
+        // 发送图片的 base64 数据
+        images: currentImages.length > 0 ? currentImages.map(img => img.base64) : undefined
       });
 
       // 添加 AI 回复到聊天历史
