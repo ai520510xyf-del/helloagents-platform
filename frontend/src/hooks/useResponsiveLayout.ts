@@ -2,20 +2,18 @@
  * useResponsiveLayout Hook
  * 检测屏幕尺寸并返回当前布局类型
  *
- * 布局断点：
- * - mobile: < 768px
- * - tablet: 768px - 1024px
- * - desktop: > 1024px
+ * 布局断点（简化为2种）：
+ * - mobile: <= 768px - 使用移动端单栏布局
+ * - desktop: > 768px - 使用桌面端两栏布局
  */
 
 import { useState, useEffect } from 'react';
 
-export type LayoutType = 'mobile' | 'tablet' | 'desktop';
+export type LayoutType = 'mobile' | 'desktop';
 
 export interface ResponsiveLayout {
   layoutType: LayoutType;
   isMobile: boolean;
-  isTablet: boolean;
   isDesktop: boolean;
   screenWidth: number;
   screenHeight: number;
@@ -23,20 +21,10 @@ export interface ResponsiveLayout {
   isPortrait: boolean;
 }
 
-const BREAKPOINTS = {
-  mobile: 768,
-  tablet: 1024,
-} as const;
+const MOBILE_BREAKPOINT = 768;
 
-function getLayoutType(width: number, _height: number, isLandscape: boolean): LayoutType {
-  // 横屏模式下，如果是小屏幕（手机），自动切换到平板布局
-  if (isLandscape && width < BREAKPOINTS.tablet && width > BREAKPOINTS.mobile - 1) {
-    return 'tablet';
-  }
-
-  if (width < BREAKPOINTS.mobile) return 'mobile';
-  if (width < BREAKPOINTS.tablet) return 'tablet';
-  return 'desktop';
+function getLayoutType(width: number): LayoutType {
+  return width <= MOBILE_BREAKPOINT ? 'mobile' : 'desktop';
 }
 
 export function useResponsiveLayout(): ResponsiveLayout {
@@ -65,12 +53,11 @@ export function useResponsiveLayout(): ResponsiveLayout {
 
   const isLandscape = screenWidth > screenHeight;
   const isPortrait = screenHeight >= screenWidth;
-  const layoutType = getLayoutType(screenWidth, screenHeight, isLandscape);
+  const layoutType = getLayoutType(screenWidth);
 
   return {
     layoutType,
     isMobile: layoutType === 'mobile',
-    isTablet: layoutType === 'tablet',
     isDesktop: layoutType === 'desktop',
     screenWidth,
     screenHeight,

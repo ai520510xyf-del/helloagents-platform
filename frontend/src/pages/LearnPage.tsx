@@ -7,13 +7,8 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Panel, Group, Separator } from 'react-resizable-panels';
 import { MigrationPrompt } from '../components/MigrationPrompt';
 import { NavigationBar } from '../components/learn/NavigationBar';
-import { CourseMenu } from '../components/learn/CourseMenu';
-import { CodeEditorPanel } from '../components/learn/CodeEditorPanel';
-import { ContentPanel } from '../components/learn/ContentPanel';
-import { TerminalOutput } from '../components/learn/TerminalOutput';
 import { MobileLayout } from '../components/learn/MobileLayout';
 import { TabletLayout } from '../components/learn/TabletLayout';
 import { calculateProgress } from '../data/courses';
@@ -46,9 +41,6 @@ export function LearnPage() {
   const [code, setCode] = useState(loadCodeFromStorage(currentLesson.id));
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [activeTab, setActiveTab] = useState<'content' | 'ai'>('content');
-  const [isCodeEditorCollapsed, setIsCodeEditorCollapsed] = useState(false);
-  const [isCourseMenuCollapsed, setIsCourseMenuCollapsed] = useState(false);
-  const [isLessonLoading, setIsLessonLoading] = useState(false);
 
   // 聊天消息管理
   const {
@@ -76,6 +68,24 @@ export function LearnPage() {
     themeStorage.set('theme', theme);
   }, [theme]);
 
+  // 初始化时清除可能导致布局异常的旧版本缓存
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem('react-resizable-panels:desktop-main-panels');
+      if (cached) {
+        const layout = JSON.parse(cached);
+        // 检查是否有异常的面板尺寸（小于10%可能是异常值）
+        if (Array.isArray(layout) && layout.some((size: number) => typeof size === 'number' && size < 10)) {
+          console.log('[LearnPage] 检测到异常的面板布局缓存，已清除');
+          localStorage.removeItem('react-resizable-panels:desktop-main-panels');
+        }
+      }
+    } catch {
+      // 解析失败，清除缓存
+      localStorage.removeItem('react-resizable-panels:desktop-main-panels');
+    }
+  }, []);
+
   // 自动保存代码到本地存储
   useEffect(() => {
     if (currentLesson) {
@@ -88,31 +98,16 @@ export function LearnPage() {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   }, []);
 
-  // 切换代码编辑器折叠状态
-  const toggleCodeEditorCollapse = useCallback(() => {
-    setIsCodeEditorCollapsed(prev => !prev);
-  }, []);
-
-  // 切换课程菜单折叠状态
-  const toggleCourseMenuCollapse = useCallback(() => {
-    setIsCourseMenuCollapsed(prev => !prev);
-  }, []);
-
   // 切换课程 - 使用 useCallback 稳定引用
   const handleLessonChange = useCallback(async (lessonId: string) => {
-    setIsLessonLoading(true);
-    try {
-      await changeLesson(lessonId);
+    await changeLesson(lessonId);
 
-      // 从本地缓存加载该课程的代码和聊天历史
-      const savedCode = loadCodeFromStorage(lessonId);
-      setCode(savedCode);
+    // 从本地缓存加载该课程的代码和聊天历史
+    const savedCode = loadCodeFromStorage(lessonId);
+    setCode(savedCode);
 
-      // 重置其他状态
-      clearOutput();
-    } finally {
-      setIsLessonLoading(false);
-    }
+    // 重置其他状态
+    clearOutput();
   }, [changeLesson, clearOutput]);
 
   // 重置代码 - 使用 useCallback 稳定引用
@@ -189,166 +184,43 @@ export function LearnPage() {
     );
   }
 
-  // 平板布局
-  if (layoutType === 'tablet') {
-    return (
-      <>
-        <MigrationPrompt theme={theme} />
-        <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-bg-dark text-text-primary' : 'bg-white text-gray-900'}`}>
-          <NavigationBar
-            currentLesson={currentLesson}
-            progress={progress}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-          />
-          <main className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
-            <TabletLayout
-              currentLesson={currentLesson}
-              onLessonChange={handleLessonChange}
-              code={code}
-              onCodeChange={handleCodeChange}
-              cursorPosition={cursorPosition}
-              onCursorChange={handleCursorChange}
-              isRunning={isRunning}
-              output={output}
-              onRun={handleRunCode}
-              onStop={stopExecution}
-              onReset={handleReset}
-              onClearOutput={clearOutput}
-              activeContentTab={activeTab}
-              onContentTabChange={setActiveTab}
-              chatMessages={chatMessages}
-              chatInput={chatInput}
-              onChatInputChange={setChatInput}
-              isChatLoading={isChatLoading}
-              onSendMessage={sendMessage}
-              onRegenerateMessage={regenerateMessage}
-              uploadedImages={uploadedImages}
-              onImagesChange={setUploadedImages}
-              theme={theme}
-            />
-          </main>
-        </div>
-      </>
-    );
-  }
-
-  // 桌面布局（默认三栏布局）
+  // 桌面布局（使用两栏布局）
   return (
     <>
-      {/* 数据迁移提示 */}
       <MigrationPrompt theme={theme} />
-
       <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-bg-dark text-text-primary' : 'bg-white text-gray-900'}`}>
-        {/* 顶部导航栏 */}
         <NavigationBar
           currentLesson={currentLesson}
           progress={progress}
           theme={theme}
           onToggleTheme={toggleTheme}
         />
-
-        {/* 主内容区 - 使用垂直可调整布局 */}
-        <main className="flex-1 min-h-0">
-          {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
-          <Group direction="vertical" id="desktop-vertical-group">
-            {/* 上半部分：三栏布局 */}
-            <Panel id="desktop-top-section" defaultSize={70} minSize={30}>
-              {/* @ts-expect-error - react-resizable-panels Group 类型定义问题 */}
-              <Group direction="horizontal" id="desktop-main-panels">
-                {/* 左侧：课程目录 */}
-                <Panel
-                  id="course-menu"
-                  defaultSize={isCourseMenuCollapsed ? 5 : 20}
-                  minSize={isCourseMenuCollapsed ? 5 : 15}
-                  maxSize={isCourseMenuCollapsed ? 5 : 30}
-                  collapsible={true}
-                  style={{ height: '100%', overflow: 'auto' }}
-                >
-                  <CourseMenu
-                    currentLesson={currentLesson}
-                    theme={theme}
-                    onLessonChange={handleLessonChange}
-                    isCollapsed={isCourseMenuCollapsed}
-                    onToggleCollapse={toggleCourseMenuCollapse}
-                  />
-                </Panel>
-
-                <Separator className={`w-1 transition-colors resizable-separator resizable-separator-vertical ${
-                  theme === 'dark'
-                    ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
-                    : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
-                }`} />
-
-                {/* 中间：代码编辑器 */}
-                <Panel
-                  id="code-editor"
-                  defaultSize={isCodeEditorCollapsed ? 5 : 50}
-                  minSize={isCodeEditorCollapsed ? 5 : 30}
-                  maxSize={isCodeEditorCollapsed ? 5 : 70}
-                  collapsible={true}
-                  style={{ height: '100%', overflow: 'auto' }}
-                >
-                  <CodeEditorPanel
-                    code={code}
-                    onCodeChange={handleCodeChange}
-                    cursorPosition={cursorPosition}
-                    onCursorChange={handleCursorChange}
-                    currentLesson={currentLesson}
-                    theme={theme}
-                    isRunning={isRunning}
-                    onRun={handleRunCode}
-                    onStop={stopExecution}
-                    onReset={handleReset}
-                    isCollapsed={isCodeEditorCollapsed}
-                    onToggleCollapse={toggleCodeEditorCollapse}
-                  />
-                </Panel>
-
-                <Separator className={`w-1 transition-colors resizable-separator resizable-separator-vertical ${
-                  theme === 'dark'
-                    ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
-                    : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
-                }`} />
-
-                {/* 右侧：课程内容 + AI 助手 */}
-                <Panel id="content-panel" defaultSize={30} minSize={20} style={{ height: '100%', overflow: 'auto' }}>
-                  <ContentPanel
-                    activeTab={activeTab}
-                    onTabChange={setActiveTab}
-                    currentLesson={currentLesson}
-                    theme={theme}
-                    chatMessages={chatMessages}
-                    chatInput={chatInput}
-                    onChatInputChange={setChatInput}
-                    isChatLoading={isChatLoading}
-                    onSendMessage={sendMessage}
-                    onRegenerateMessage={regenerateMessage}
-                    isContentLoading={isLessonLoading}
-                    uploadedImages={uploadedImages}
-                    onImagesChange={setUploadedImages}
-                  />
-                </Panel>
-              </Group>
-            </Panel>
-
-            {/* 可拖动的水平分割线 */}
-            <Separator className={`h-1 transition-colors resizable-separator resizable-separator-horizontal ${
-              theme === 'dark'
-                ? 'bg-gray-700 hover:bg-blue-400 active:bg-blue-500'
-                : 'bg-gray-300 hover:bg-blue-500 active:bg-blue-600'
-            }`} />
-
-            {/* 下半部分：终端输出 */}
-            <Panel id="terminal-panel" defaultSize={30} minSize={15}>
-              <TerminalOutput
-                output={output}
-                isRunning={isRunning}
-                theme={theme}
-                onClear={clearOutput}
-              />
-            </Panel>
-          </Group>
+        <main className="flex-1 min-h-0" style={{ marginTop: '0.5rem' }}>
+          <TabletLayout
+            currentLesson={currentLesson}
+            onLessonChange={handleLessonChange}
+            code={code}
+            onCodeChange={handleCodeChange}
+            cursorPosition={cursorPosition}
+            onCursorChange={handleCursorChange}
+            isRunning={isRunning}
+            output={output}
+            onRun={handleRunCode}
+            onStop={stopExecution}
+            onReset={handleReset}
+            onClearOutput={clearOutput}
+            activeContentTab={activeTab}
+            onContentTabChange={setActiveTab}
+            chatMessages={chatMessages}
+            chatInput={chatInput}
+            onChatInputChange={setChatInput}
+            isChatLoading={isChatLoading}
+            onSendMessage={sendMessage}
+            onRegenerateMessage={regenerateMessage}
+            uploadedImages={uploadedImages}
+            onImagesChange={setUploadedImages}
+            theme={theme}
+          />
         </main>
       </div>
     </>
