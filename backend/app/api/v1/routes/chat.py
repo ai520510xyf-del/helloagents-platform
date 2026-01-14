@@ -117,27 +117,56 @@ def call_cloudflare_vision(messages: List[dict], images: List[str] = None):
         "cloudflare_ai_call_started",
         model=model,
         has_images=bool(images and len(images) > 0),
-        message_count=len(messages)
+        message_count=len(messages),
+        account_id=CLOUDFLARE_ACCOUNT_ID[:8] + "..." if CLOUDFLARE_ACCOUNT_ID else None
     )
 
     try:
         response = requests.post(url, headers=headers, json=payload, timeout=60)
+
+        logger.info(
+            "cloudflare_api_response_received",
+            status_code=response.status_code,
+            content_length=len(response.content) if response.content else 0
+        )
+
         response.raise_for_status()
 
         result = response.json()
 
+        logger.debug(
+            "cloudflare_api_response_parsed",
+            result_keys=list(result.keys()) if isinstance(result, dict) else None
+        )
+
         # Cloudflare Workers AI 返回格式：{"result": {"response": "..."}}
         if "result" in result and "response" in result["result"]:
-            return result["result"]["response"]
+            ai_response = result["result"]["response"]
+            logger.info(
+                "cloudflare_ai_response_extracted",
+                response_length=len(ai_response)
+            )
+            return ai_response
         else:
-            logger.error("cloudflare_ai_unexpected_format", response=result)
+            logger.error(
+                "cloudflare_ai_unexpected_format",
+                response_keys=list(result.keys()) if isinstance(result, dict) else None,
+                response_sample=str(result)[:200]
+            )
             raise Exception("Unexpected response format from Cloudflare AI")
 
     except requests.exceptions.Timeout:
-        logger.error("cloudflare_ai_timeout")
+        logger.error("cloudflare_ai_timeout", url=url)
         raise Exception("Cloudflare AI request timed out")
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            "cloudflare_ai_http_error",
+            status_code=e.response.status_code if e.response else None,
+            error_body=e.response.text if e.response else None
+        )
+        raise Exception(f"Cloudflare API HTTP error: {e}")
     except requests.exceptions.RequestException as e:
-        logger.error("cloudflare_ai_request_failed", error=str(e))
+        logger.error("cloudflare_ai_request_failed", error=str(e), error_type=type(e).__name__)
         raise Exception(f"Cloudflare AI request failed: {str(e)}")
 
 
