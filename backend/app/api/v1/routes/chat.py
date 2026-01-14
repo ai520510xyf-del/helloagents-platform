@@ -262,7 +262,26 @@ async def chat_with_ai(
 
         # 判断使用哪个 AI 提供商
         has_images = chat_request.images and len(chat_request.images) > 0
-        use_vision = has_images or AI_PROVIDER == "cloudflare-vision"
+
+        # 检查 Cloudflare 配置
+        cloudflare_available = bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)
+
+        # 如果有图片但 Cloudflare 未配置，返回错误
+        if has_images and not cloudflare_available:
+            logger.error(
+                "cloudflare_config_missing",
+                has_images=True
+            )
+            return error_response(
+                code="CLOUDFLARE_CONFIG_MISSING",
+                message="图片分析功能需要配置 Cloudflare Workers AI",
+                details={
+                    "error": "CLOUDFLARE_ACCOUNT_ID 和 CLOUDFLARE_API_TOKEN 环境变量未设置",
+                    "solution": "请在 Render Dashboard 中设置这两个环境变量以启用图片分析功能"
+                }
+            )
+
+        use_vision = has_images or (AI_PROVIDER == "cloudflare-vision" and cloudflare_available)
 
         assistant_message = None
         total_tokens = None
