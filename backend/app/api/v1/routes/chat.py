@@ -177,7 +177,7 @@ class ChatResponse(BaseModel):
 @router.post("/", include_in_schema=False)
 @limiter.limit("20/minute")
 async def chat_with_ai(
-    request_obj: Request,
+    request: Request,
     chat_request: ChatRequest,
     user_id: Optional[int] = None,
     db: Session = Depends(get_db)

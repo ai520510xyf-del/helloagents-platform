@@ -64,7 +64,7 @@ class AIHintResponse(BaseModel):
 @router.post("/execute")
 @limiter.limit("30/minute")
 async def execute_code(
-    request_obj: Request,
+    request: Request,
     code_request: CodeExecutionRequest,
     user_id: Optional[int] = None,
     lesson_id: Optional[int] = None,
@@ -160,7 +160,7 @@ async def execute_code(
 @router.post("/hint")
 @limiter.limit("60/minute")
 async def get_ai_hint(
-    request_obj: Request,
+    request: Request,
     hint_request: AIHintRequest
 ):
     """
